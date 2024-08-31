@@ -68,6 +68,9 @@ func (h *HTTP) Call(ctx context.Context, result any, method string, args ...any)
 	if err := json.NewDecoder(httpRes.Body).Decode(rpcRes); err != nil {
 		// If the response is not a valid JSON-RPC response, return the HTTP
 		// status code as the error code.
+		if httpRes.StatusCode >= 200 && httpRes.StatusCode < 300 {
+			return fmt.Errorf("failed to unmarshal RPC response: %w", err)
+		}
 		return NewHTTPError(httpRes.StatusCode, nil)
 	}
 	if rpcRes.Error != nil {

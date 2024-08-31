@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/sha3"
 )
 
 func Test_AddressType_Unmarshal(t *testing.T) {
@@ -622,12 +621,4 @@ func Test_HashFromBigInt(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func keccak256(data ...[]byte) Hash {
-	h := sha3.NewLegacyKeccak256()
-	for _, i := range data {
-		h.Write(i)
-	}
-	return MustHashFromBytes(h.Sum(nil), PadNone)
 }

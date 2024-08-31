@@ -16,7 +16,7 @@ type Signer interface {
 	SignMessage(data []byte) (*types.Signature, error)
 
 	// SignTransaction signs a transaction.
-	SignTransaction(tx *types.Transaction) error
+	SignTransaction(tx types.Transaction) error
 }
 
 // Recoverer is an interface for recovering addresses from signatures.
@@ -28,7 +28,7 @@ type Recoverer interface {
 	RecoverMessage(data []byte, sig types.Signature) (*types.Address, error)
 
 	// RecoverTransaction recovers the address from a transaction.
-	RecoverTransaction(tx *types.Transaction) (*types.Address, error)
+	RecoverTransaction(tx types.Transaction) (*types.Address, error)
 }
 
 // AddMessagePrefix adds the Ethereum message prefix to the given data as
@@ -56,7 +56,7 @@ func (s *ecSigner) SignMessage(data []byte) (*types.Signature, error) {
 	return ecSignMessage(s.key, data)
 }
 
-func (s *ecSigner) SignTransaction(tx *types.Transaction) error {
+func (s *ecSigner) SignTransaction(tx types.Transaction) error {
 	return ecSignTransaction(s.key, tx)
 }
 
@@ -68,6 +68,6 @@ func (r *ecRecoverer) RecoverMessage(data []byte, sig types.Signature) (*types.A
 	return ecRecoverMessage(data, sig)
 }
 
-func (r *ecRecoverer) RecoverTransaction(tx *types.Transaction) (*types.Address, error) {
+func (r *ecRecoverer) RecoverTransaction(tx types.Transaction) (*types.Address, error) {
 	return ecRecoverTransaction(tx)
 }

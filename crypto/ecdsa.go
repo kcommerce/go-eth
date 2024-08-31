@@ -56,15 +56,12 @@ func ecSignMessage(key *ecdsa.PrivateKey, data []byte) (*types.Signature, error)
 }
 
 // ecSignTransaction signs the given transaction with the given private key.
-func ecSignTransaction(key *ecdsa.PrivateKey, tx *types.Transaction) error {
+func ecSignTransaction(key *ecdsa.PrivateKey, tx types.Transaction) error {
 	if key == nil {
 		return fmt.Errorf("missing private key")
 	}
-	from := ECPublicKeyToAddress(&key.PublicKey)
-	if tx.From != nil && *tx.From != from {
-		return fmt.Errorf("invalid signer address: %s", tx.From)
-	}
-	hash, err := signingHash(tx)
+	txd := tx.TransactionData()
+	hash, err := tx.CalculateSigningHash(Keccak256)
 	if err != nil {
 		return err
 	}
@@ -73,21 +70,18 @@ func ecSignTransaction(key *ecdsa.PrivateKey, tx *types.Transaction) error {
 		return err
 	}
 	sv, sr, ss := sig.V, sig.R, sig.S
-	switch tx.Type {
-	case types.LegacyTxType:
-		if tx.ChainID != nil {
-			sv = new(big.Int).Add(sv, new(big.Int).SetUint64(*tx.ChainID*2))
+	if tx.Type() == types.LegacyTxType {
+		if txd.ChainID != nil {
+			sv = new(big.Int).Add(sv, new(big.Int).SetUint64(*txd.ChainID*2))
 			sv = new(big.Int).Add(sv, big.NewInt(35))
 		} else {
 			sv = new(big.Int).Add(sv, big.NewInt(27))
 		}
-	case types.AccessListTxType:
-	case types.DynamicFeeTxType:
-	default:
-		return fmt.Errorf("unsupported transaction type: %d", tx.Type)
 	}
-	tx.From = &from
-	tx.Signature = types.SignatureFromVRSPtr(sv, sr, ss)
+	txd.SetSignature(types.SignatureFromVRS(sv, sr, ss))
+	if cd, ok := tx.(types.HasCallData); ok {
+		cd.CallData().SetFrom(ECPublicKeyToAddress(&key.PublicKey))
+	}
 	return nil
 }
 
@@ -128,19 +122,19 @@ func ecRecoverMessage(data []byte, sig types.Signature) (*types.Address, error) 
 }
 
 // ecRecoverTransaction recovers the Ethereum address from the given transaction.
-func ecRecoverTransaction(tx *types.Transaction) (*types.Address, error) {
-	if tx.Signature == nil {
+func ecRecoverTransaction(tx types.Transaction) (*types.Address, error) {
+	txd := tx.TransactionData()
+	if txd.Signature == nil {
 		return nil, fmt.Errorf("signature is missing")
 	}
-	sig := *tx.Signature
-	switch tx.Type {
-	case types.LegacyTxType:
-		if tx.Signature.V.Cmp(big.NewInt(35)) >= 0 {
+	sig := *txd.Signature
+	if tx.Type() == types.LegacyTxType {
+		if sig.V.Cmp(big.NewInt(35)) >= 0 {
 			x := new(big.Int).Sub(sig.V, big.NewInt(35))
 
 			// Derive the chain ID from the signature.
 			chainID := new(big.Int).Div(x, big.NewInt(2))
-			if tx.ChainID != nil && *tx.ChainID != chainID.Uint64() {
+			if txd.ChainID != nil && *txd.ChainID != chainID.Uint64() {
 				return nil, fmt.Errorf("invalid chain ID: %d", chainID)
 			}
 
@@ -149,12 +143,8 @@ func ecRecoverTransaction(tx *types.Transaction) (*types.Address, error) {
 		} else {
 			sig.V = new(big.Int).Sub(sig.V, big.NewInt(27))
 		}
-	case types.AccessListTxType:
-	case types.DynamicFeeTxType:
-	default:
-		return nil, fmt.Errorf("unsupported transaction type: %d", tx.Type)
 	}
-	hash, err := signingHash(tx)
+	hash, err := tx.CalculateSigningHash(Keccak256)
 	if err != nil {
 		return nil, err
 	}

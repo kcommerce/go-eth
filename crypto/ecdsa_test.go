@@ -39,13 +39,12 @@ func Test_ecSignMessage(t *testing.T) {
 func Test_ecSignTransaction(t *testing.T) {
 	t.Run("legacy", func(t *testing.T) {
 		key, _ := btcec.PrivKeyFromBytes(bytes.Repeat([]byte{0x01}, 32))
-		tx := (&types.Transaction{}).
-			SetType(types.LegacyTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetGasPrice(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000))
+		tx := types.NewTransactionLegacy()
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetGasPrice(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
 		err := ecSignTransaction(key.ToECDSA(), tx)
 
 		require.NoError(t, err)
@@ -55,14 +54,13 @@ func Test_ecSignTransaction(t *testing.T) {
 	})
 	t.Run("legacy-eip155", func(t *testing.T) {
 		key, _ := btcec.PrivKeyFromBytes(bytes.Repeat([]byte{0x01}, 32))
-		tx := (&types.Transaction{}).
-			SetType(types.LegacyTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetGasPrice(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000)).
-			SetChainID(1337)
+		tx := types.NewTransactionLegacy()
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetGasPrice(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
+		tx.SetChainID(1337)
 		err := ecSignTransaction(key.ToECDSA(), tx)
 
 		require.NoError(t, err)
@@ -72,13 +70,13 @@ func Test_ecSignTransaction(t *testing.T) {
 	})
 	t.Run("access-list", func(t *testing.T) {
 		key, _ := btcec.PrivKeyFromBytes(bytes.Repeat([]byte{0x01}, 32))
-		tx := (&types.Transaction{}).
-			SetType(types.AccessListTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetGasPrice(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000))
+		tx := types.NewTransactionAccessList()
+		tx.SetChainID(1)
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetGasPrice(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
 		err := ecSignTransaction(key.ToECDSA(), tx)
 
 		require.NoError(t, err)
@@ -88,14 +86,14 @@ func Test_ecSignTransaction(t *testing.T) {
 	})
 	t.Run("dynamic-fee", func(t *testing.T) {
 		key, _ := btcec.PrivKeyFromBytes(bytes.Repeat([]byte{0x01}, 32))
-		tx := (&types.Transaction{}).
-			SetType(types.DynamicFeeTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetMaxFeePerGas(big.NewInt(20000000000)).
-			SetMaxPriorityFeePerGas(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000))
+		tx := types.NewTransactionDynamicFee()
+		tx.SetChainID(1)
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetMaxFeePerGas(big.NewInt(20000000000))
+		tx.SetMaxPriorityFeePerGas(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
 		err := ecSignTransaction(key.ToECDSA(), tx)
 
 		require.NoError(t, err)
@@ -135,74 +133,72 @@ func Test_ecRecoverMessage(t *testing.T) {
 
 func Test_ecRecoverTransaction(t *testing.T) {
 	t.Run("legacy", func(t *testing.T) {
-		tx := (&types.Transaction{}).
-			SetType(types.LegacyTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetGasPrice(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000)).
-			SetSignature(types.SignatureFromVRS(
-				hexutil.MustHexToBigInt("1b"),
-				hexutil.MustHexToBigInt("2bfad43ba1b40e7f3ffb6342b1a6eecc700dd344fb0aba543aed5c10fd1a9470"),
-				hexutil.MustHexToBigInt("615bff48c483d368ed4f6e327a6ddd8831e544d0ca08f1345433e4ed204f8537"),
-			))
+		tx := types.NewTransactionLegacy()
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetGasPrice(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
+		tx.SetSignature(types.SignatureFromVRS(
+			hexutil.MustHexToBigInt("1b"),
+			hexutil.MustHexToBigInt("2bfad43ba1b40e7f3ffb6342b1a6eecc700dd344fb0aba543aed5c10fd1a9470"),
+			hexutil.MustHexToBigInt("615bff48c483d368ed4f6e327a6ddd8831e544d0ca08f1345433e4ed204f8537"),
+		))
 		addr, err := ecRecoverTransaction(tx)
 
 		require.NoError(t, err)
 		assert.Equal(t, "0x1a642f0e3c3af545e7acbd38b07251b3990914f1", addr.String())
 	})
 	t.Run("legacy-eip155", func(t *testing.T) {
-		tx := (&types.Transaction{}).
-			SetType(types.LegacyTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetGasPrice(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000)).
-			SetChainID(1337).
-			SetSignature(types.SignatureFromVRS(
-				hexutil.MustHexToBigInt("a95"),
-				hexutil.MustHexToBigInt("14702a15dd7739397f25e3902a0c2bf6989e93888201139aac2c67a8f33a2f3f"),
-				hexutil.MustHexToBigInt("4a10ba6cf47ace7e3c847e38583f5b1e1c7d8a862f4b43cd74480a03007363f7"),
-			))
+		tx := types.NewTransactionLegacy()
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetGasPrice(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
+		tx.SetChainID(1337)
+		tx.SetSignature(types.SignatureFromVRS(
+			hexutil.MustHexToBigInt("a95"),
+			hexutil.MustHexToBigInt("14702a15dd7739397f25e3902a0c2bf6989e93888201139aac2c67a8f33a2f3f"),
+			hexutil.MustHexToBigInt("4a10ba6cf47ace7e3c847e38583f5b1e1c7d8a862f4b43cd74480a03007363f7"),
+		))
 		addr, err := ecRecoverTransaction(tx)
 
 		require.NoError(t, err)
 		assert.Equal(t, "0x1a642f0e3c3af545e7acbd38b07251b3990914f1", addr.String())
 	})
 	t.Run("access-list", func(t *testing.T) {
-		tx := (&types.Transaction{}).
-			SetType(types.AccessListTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetGasPrice(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000)).
-			SetSignature(types.SignatureFromVRS(
-				hexutil.MustHexToBigInt("1"),
-				hexutil.MustHexToBigInt("dc1fcd0c6f56eddc8dbe70635690cce521276b8a6e167f8e57e4064db8a5738e"),
-				hexutil.MustHexToBigInt("2743f261c001ee472c9664258708eaf849fc85623ee337d2018d37fc6f397d8c"),
-			))
+		tx := types.NewTransactionAccessList()
+		tx.SetChainID(1)
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetGasPrice(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
+		tx.SetSignature(types.SignatureFromVRS(
+			hexutil.MustHexToBigInt("1"),
+			hexutil.MustHexToBigInt("dc1fcd0c6f56eddc8dbe70635690cce521276b8a6e167f8e57e4064db8a5738e"),
+			hexutil.MustHexToBigInt("2743f261c001ee472c9664258708eaf849fc85623ee337d2018d37fc6f397d8c"),
+		))
 		addr, err := ecRecoverTransaction(tx)
 
 		require.NoError(t, err)
 		assert.Equal(t, "0x1a642f0e3c3af545e7acbd38b07251b3990914f1", addr.String())
 	})
 	t.Run("dynamic-fee", func(t *testing.T) {
-		tx := (&types.Transaction{}).
-			SetType(types.DynamicFeeTxType).
-			SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535")).
-			SetGasLimit(21000).
-			SetMaxFeePerGas(big.NewInt(20000000000)).
-			SetMaxPriorityFeePerGas(big.NewInt(20000000000)).
-			SetNonce(9).
-			SetValue(big.NewInt(1000000000000000000)).
-			SetSignature(types.SignatureFromVRS(
-				hexutil.MustHexToBigInt("0"),
-				hexutil.MustHexToBigInt("62072d055f9ceb871a47f2d81aeb5aa34df50c625da16c6d0d57d232fa3cd152"),
-				hexutil.MustHexToBigInt("57fd88df7c85076f5729493be7e87f51b618a78bc89441ed741bdfdb9d1d5572"),
-			))
+		tx := types.NewTransactionDynamicFee()
+		tx.SetChainID(1)
+		tx.SetTo(types.MustAddressFromHex("0x3535353535353535353535353535353535353535"))
+		tx.SetGasLimit(21000)
+		tx.SetMaxFeePerGas(big.NewInt(20000000000))
+		tx.SetMaxPriorityFeePerGas(big.NewInt(20000000000))
+		tx.SetNonce(9)
+		tx.SetValue(big.NewInt(1000000000000000000))
+		tx.SetSignature(types.SignatureFromVRS(
+			hexutil.MustHexToBigInt("0"),
+			hexutil.MustHexToBigInt("62072d055f9ceb871a47f2d81aeb5aa34df50c625da16c6d0d57d232fa3cd152"),
+			hexutil.MustHexToBigInt("57fd88df7c85076f5729493be7e87f51b618a78bc89441ed741bdfdb9d1d5572"),
+		))
 		addr, err := ecRecoverTransaction(tx)
 
 		require.NoError(t, err)

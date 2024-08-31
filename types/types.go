@@ -295,11 +295,11 @@ func HashFromBigInt(i *big.Int) (Hash, error) {
 		x := new(big.Int).Set(i).And(i, m)
 		b = x.Bytes()
 		if len(b) != HashLength || b[0]&0x80 == 0 {
-			return Hash{}, fmt.Errorf("number too large to convert to hash")
+			return Hash{}, fmt.Errorf("number too large To convert To hash")
 		}
 	}
 	if len(b) > HashLength {
-		return Hash{}, fmt.Errorf("number too large to convert to hash")
+		return Hash{}, fmt.Errorf("number too large To convert To hash")
 	}
 	return HashFromBytes(b, PadLeft)
 }

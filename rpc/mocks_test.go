@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"testing"
 
@@ -22,8 +23,7 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 type httpMock struct {
 	*transport.HTTP
 
-	Request      *http.Request
-	ResponseMock *http.Response
+	Handler func(req *http.Request) (*http.Response, error)
 }
 
 func newHTTPMock() *httpMock {
@@ -32,8 +32,7 @@ func newHTTPMock() *httpMock {
 		URL: "http://localhost",
 		HTTPClient: &http.Client{
 			Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-				h.Request = req
-				return h.ResponseMock, nil
+				return h.Handler(req)
 			}),
 		},
 	})
@@ -117,4 +116,9 @@ func (k *keyMock) VerifyHash(ctx context.Context, hash types.Hash, sig types.Sig
 
 func (k keyMock) VerifyMessage(ctx context.Context, data []byte, sig types.Signature) bool {
 	return false
+}
+
+func readBody(r *http.Request) string {
+	body, _ := io.ReadAll(r.Body)
+	return string(body)
 }
