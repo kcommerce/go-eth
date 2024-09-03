@@ -514,39 +514,32 @@ func NewFilterLogsQuery() *FilterLogsQuery {
 	return &FilterLogsQuery{}
 }
 
-func (q *FilterLogsQuery) SetAddresses(addresses ...Address) *FilterLogsQuery {
+func (q *FilterLogsQuery) SetAddresses(addresses ...Address) {
 	q.Address = addresses
-	return q
 }
 
-func (q *FilterLogsQuery) AddAddresses(addresses ...Address) *FilterLogsQuery {
+func (q *FilterLogsQuery) AddAddresses(addresses ...Address) {
 	q.Address = append(q.Address, addresses...)
-	return q
 }
 
-func (q *FilterLogsQuery) SetFromBlock(fromBlock *BlockNumber) *FilterLogsQuery {
+func (q *FilterLogsQuery) SetFromBlock(fromBlock *BlockNumber) {
 	q.FromBlock = fromBlock
-	return q
 }
 
-func (q *FilterLogsQuery) SetToBlock(toBlock *BlockNumber) *FilterLogsQuery {
+func (q *FilterLogsQuery) SetToBlock(toBlock *BlockNumber) {
 	q.ToBlock = toBlock
-	return q
 }
 
-func (q *FilterLogsQuery) SetTopics(topics ...[]Hash) *FilterLogsQuery {
+func (q *FilterLogsQuery) SetTopics(topics ...[]Hash) {
 	q.Topics = topics
-	return q
 }
 
-func (q *FilterLogsQuery) AddTopics(topics ...[]Hash) *FilterLogsQuery {
+func (q *FilterLogsQuery) AddTopics(topics ...[]Hash) {
 	q.Topics = append(q.Topics, topics...)
-	return q
 }
 
-func (q *FilterLogsQuery) SetBlockHash(blockHash *Hash) *FilterLogsQuery {
+func (q *FilterLogsQuery) SetBlockHash(blockHash *Hash) {
 	q.BlockHash = blockHash
-	return q
 }
 
 func (q FilterLogsQuery) MarshalJSON() ([]byte, error) {
