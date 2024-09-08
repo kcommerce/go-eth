@@ -6,6 +6,8 @@ import (
 	"math/big"
 
 	"github.com/defiweb/go-rlp"
+
+	"github.com/defiweb/go-eth/crypto"
 )
 
 type TransactionAccessList struct {
@@ -31,15 +33,15 @@ func (t *TransactionAccessList) Call() Call {
 	}
 }
 
-func (t *TransactionAccessList) CalculateHash(h HashFunc) (Hash, error) {
+func (t *TransactionAccessList) CalculateHash() (Hash, error) {
 	raw, err := t.EncodeRLP()
 	if err != nil {
 		return ZeroHash, err
 	}
-	return h(raw), nil
+	return Hash(crypto.Keccak256(raw)), nil
 }
 
-func (t *TransactionAccessList) CalculateSigningHash(h HashFunc) (Hash, error) {
+func (t *TransactionAccessList) CalculateSigningHash() (Hash, error) {
 	var (
 		chainID    = uint64(0)
 		nonce      = uint64(0)
@@ -84,7 +86,7 @@ func (t *TransactionAccessList) CalculateSigningHash(h HashFunc) (Hash, error) {
 		return ZeroHash, err
 	}
 	bin = append([]byte{byte(AccessListTxType)}, bin...)
-	return h(bin), nil
+	return Hash(crypto.Keccak256(bin)), nil
 }
 
 //nolint:funlen

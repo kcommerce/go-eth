@@ -1267,3 +1267,37 @@ func TestBaseClient_MaxPriorityFeePerGas(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, hexutil.MustHexToBigInt("0x1"), gasPrice)
 }
+
+const mockBlobBaseFeeRequest = `
+	{
+	  "jsonrpc": "2.0",
+	  "id": 1,
+	  "method": "eth_blobBaseFee",
+	  "params": []
+	}
+`
+
+const mockBlobBaseFeeResponse = `
+	{
+	  "jsonrpc": "2.0",
+	  "id": 1,
+	  "result": "0x1"
+	}
+`
+
+func TestBaseClient_BlobBaseFee(t *testing.T) {
+	httpMock := newHTTPMock()
+	client := &MethodsCommon{Transport: httpMock}
+
+	httpMock.Handler = func(req *http.Request) (*http.Response, error) {
+		assert.JSONEq(t, mockBlobBaseFeeRequest, readBody(req))
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(bytes.NewBufferString(mockBlobBaseFeeResponse)),
+		}, nil
+	}
+
+	gasPrice, err := client.BlobBaseFee(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, hexutil.MustHexToBigInt("0x1"), gasPrice)
+}

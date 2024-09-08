@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/hexutil"
 	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
@@ -117,8 +116,7 @@ func TestHijackSimulate(t *testing.T) {
 				}, nil
 			}
 			hijacker := transport.NewHijacker(httpMock, &hijackSimulate{
-				decoder:   types.DefaultTransactionDecoder,
-				recoverer: crypto.ECRecoverer,
+				decoder: types.DefaultTransactionDecoder,
 			})
 
 			var result any

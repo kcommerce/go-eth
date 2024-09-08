@@ -22,6 +22,9 @@ func equalTX(t *testing.T, actual, expected Transaction) {
 	if _, ok := actual.(HasDynamicFeeData); ok {
 		assert.Equal(t, expected.(HasDynamicFeeData).DynamicFeeData(), actual.(HasDynamicFeeData).DynamicFeeData())
 	}
+	if _, ok := actual.(HasBlobData); ok {
+		assert.Equal(t, expected.(HasBlobData).BlobData(), actual.(HasBlobData).BlobData())
+	}
 }
 
 func derefType(t reflect.Type) reflect.Type {

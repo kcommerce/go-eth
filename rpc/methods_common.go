@@ -378,3 +378,14 @@ func (c *MethodsCommon) MaxPriorityFeePerGas(ctx context.Context) (*big.Int, err
 	}
 	return res.Big(), nil
 }
+
+// BlobBaseFee performs eth_blobBaseFee RPC call.
+//
+// It returns the expected base fee for blobs in the next block.
+func (c *MethodsCommon) BlobBaseFee(ctx context.Context) (*big.Int, error) {
+	var res types.Number
+	if err := c.Transport.Call(ctx, &res, "eth_blobBaseFee"); err != nil {
+		return nil, err
+	}
+	return res.Big(), nil
+}

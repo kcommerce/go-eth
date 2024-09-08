@@ -15,6 +15,7 @@ import (
 	"golang.org/x/crypto/scrypt"
 
 	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/types"
 )
 
 // The code below is based on:
@@ -70,7 +71,7 @@ func encryptV3Key(key *ecdsa.PrivateKey, passphrase string, scryptN, scryptP int
 	return &jsonKey{
 		Version: 3,
 		ID:      id,
-		Address: crypto.ECPublicKeyToAddress(&key.PublicKey),
+		Address: types.Address(crypto.ECPublicKeyToAddress(&key.PublicKey)),
 		Crypto: jsonKeyCrypto{
 			Cipher: "aes-128-ctr",
 			CipherParams: jsonKeyCipherParams{
@@ -85,7 +86,7 @@ func encryptV3Key(key *ecdsa.PrivateKey, passphrase string, scryptN, scryptP int
 				R:     scryptR,
 				Salt:  salt,
 			},
-			MAC: mac.Bytes(),
+			MAC: mac[:],
 		},
 	}, nil
 }
@@ -105,7 +106,7 @@ func decryptV3Key(cryptoJson jsonKeyCrypto, passphrase []byte) ([]byte, error) {
 	// VerifyHash the derived key matches the key in the JSON. If not, the
 	// passphrase is incorrect.
 	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cryptoJson.CipherText)
-	if !bytes.Equal(calculatedMAC.Bytes(), cryptoJson.MAC) {
+	if !bytes.Equal(calculatedMAC[:], cryptoJson.MAC) {
 		return nil, fmt.Errorf("invalid passphrase or keyfile")
 	}
 

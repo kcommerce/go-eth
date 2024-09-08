@@ -305,6 +305,6 @@ func (m *Method) generateSignature() {
 }
 
 func (m *Method) calculateFourBytes() {
-	id := crypto.Keccak([]byte(m.Signature()))
+	id := crypto.Keccak256([]byte(m.Signature()))
 	copy(m.fourBytes[:], id[:4])
 }

@@ -6,6 +6,8 @@ import (
 	"math/big"
 
 	"github.com/defiweb/go-rlp"
+
+	"github.com/defiweb/go-eth/crypto"
 )
 
 type TransactionLegacy struct {
@@ -29,15 +31,15 @@ func (t *TransactionLegacy) Call() Call {
 	}
 }
 
-func (t *TransactionLegacy) CalculateHash(h HashFunc) (Hash, error) {
+func (t *TransactionLegacy) CalculateHash() (Hash, error) {
 	raw, err := t.EncodeRLP()
 	if err != nil {
 		return ZeroHash, err
 	}
-	return h(raw), nil
+	return Hash(crypto.Keccak256(raw)), nil
 }
 
-func (t *TransactionLegacy) CalculateSigningHash(h HashFunc) (Hash, error) {
+func (t *TransactionLegacy) CalculateSigningHash() (Hash, error) {
 	var (
 		chainID  = uint64(0)
 		nonce    = uint64(0)
@@ -83,7 +85,7 @@ func (t *TransactionLegacy) CalculateSigningHash(h HashFunc) (Hash, error) {
 	if err != nil {
 		return ZeroHash, err
 	}
-	return h(bin), nil
+	return Hash(crypto.Keccak256(bin)), nil
 }
 
 //nolint:funlen

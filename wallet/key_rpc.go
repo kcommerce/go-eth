@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/crypto/ecdsa"
+	"github.com/defiweb/go-eth/crypto/txsign"
 	"github.com/defiweb/go-eth/types"
 )
 
@@ -19,7 +21,6 @@ type RPCSigningClient interface {
 type KeyRPC struct {
 	client  RPCSigningClient
 	address types.Address
-	recover crypto.Recoverer
 	decoder types.RPCTransactionDecoder
 }
 
@@ -28,7 +29,6 @@ func NewKeyRPC(client RPCSigningClient, address types.Address) *KeyRPC {
 	return &KeyRPC{
 		client:  client,
 		address: address,
-		recover: crypto.ECRecoverer,
 		decoder: types.DefaultTransactionDecoder,
 	}
 }
@@ -54,7 +54,7 @@ func (k *KeyRPC) SignTransaction(ctx context.Context, tx types.Transaction) erro
 		return fmt.Errorf("failed to decode signed transaction: %w", err)
 	}
 	tx.SetTransactionData(stx.TransactionData())
-	addr, err := k.recover.RecoverTransaction(tx)
+	addr, err := txsign.Recover(tx)
 	if err != nil {
 		return fmt.Errorf("failed to verify signed transaction: %w", err)
 	}
@@ -66,9 +66,9 @@ func (k *KeyRPC) SignTransaction(ctx context.Context, tx types.Transaction) erro
 
 // VerifyMessage implements the Key interface.
 func (k *KeyRPC) VerifyMessage(_ context.Context, data []byte, sig types.Signature) bool {
-	addr, err := k.recover.RecoverMessage(data, sig)
+	addr, err := crypto.ECRecoverMessage(data, ecdsa.Signature(sig))
 	if err != nil {
 		return false
 	}
-	return *addr == k.address
+	return types.Address(*addr) == k.address
 }

@@ -9,11 +9,10 @@ import (
 
 	"github.com/defiweb/go-rlp"
 
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/crypto/kzg4844"
 	"github.com/defiweb/go-eth/hexutil"
 )
-
-// HashFunc returns the hash for the given input.
-type HashFunc func(data ...[]byte) Hash
 
 // Pad is a padding type.
 type Pad uint8
@@ -119,12 +118,9 @@ func (t Address) String() string {
 
 // Checksum returns the address with the checksum calculated according to
 // EIP-55.
-//
-// HashFunc is the hash function used to calculate the checksum, most likely
-// crypto.Keccak256.
-func (t Address) Checksum(h HashFunc) string {
+func (t Address) Checksum() string {
 	hex := []byte(hexutil.BytesToHex(t[:])[2:])
-	hash := h(hex)
+	hash := crypto.Keccak256(hex)
 	for i, c := range hex {
 		if c >= '0' && c <= '9' {
 			continue
@@ -1039,17 +1035,6 @@ func (b *Bytes) UnmarshalText(input []byte) error {
 }
 
 //
-// SyncStatus type:
-//
-
-// SyncStatus represents the sync status of a node.
-type SyncStatus struct {
-	StartingBlock BlockNumber `json:"startingBlock"`
-	CurrentBlock  BlockNumber `json:"currentBlock"`
-	HighestBlock  BlockNumber `json:"highestBlock"`
-}
-
-//
 // Internal types:
 //
 
@@ -1117,13 +1102,6 @@ func (t *hexNonce) Big() *big.Int {
 	return new(big.Int).SetBytes(t[:])
 }
 
-func (t *hexNonce) String() string {
-	if t == nil {
-		return ""
-	}
-	return hexutil.BytesToHex(t[:])
-}
-
 func (t hexNonce) MarshalJSON() ([]byte, error) {
 	return bytesMarshalJSON(t[:]), nil
 }
@@ -1132,12 +1110,34 @@ func (t *hexNonce) UnmarshalJSON(input []byte) error {
 	return fixedBytesUnmarshalJSON(input, t[:])
 }
 
-func (t hexNonce) MarshalText() ([]byte, error) {
-	return bytesMarshalText(t[:]), nil
+type kzgBlob [kzg4844.BlobLength]byte
+
+func (t kzgBlob) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
 }
 
-func (t *hexNonce) UnmarshalText(input []byte) error {
-	return fixedBytesUnmarshalText(input, t[:])
+func (t *kzgBlob) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
+
+type kzgCommitment [kzg4844.CommitmentLength]byte
+
+func (t kzgCommitment) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *kzgCommitment) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
+
+type kzgProof [kzg4844.ProofLength]byte
+
+func (t kzgProof) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *kzgProof) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
 }
 
 type hashList []Hash
@@ -1155,6 +1155,34 @@ func (b *hashList) UnmarshalJSON(input []byte) error {
 		return json.Unmarshal(input, &((*b)[0]))
 	}
 	return json.Unmarshal(input, (*[]Hash)(b))
+}
+
+func (b *hashList) EncodeRLP() ([]byte, error) {
+	l := rlp.NewList()
+	for _, hash := range *b {
+		hash := hash
+		l.Append(&hash)
+	}
+	return rlp.Encode(l)
+}
+
+func (b *hashList) DecodeRLP(data []byte) (int, error) {
+	d, n, err := rlp.Decode(data)
+	if err != nil {
+		return 0, err
+	}
+	l, err := d.GetList()
+	if err != nil {
+		return 0, err
+	}
+	for _, hash := range l {
+		var h Hash
+		if err := hash.DecodeTo(&h); err != nil {
+			return 0, err
+		}
+		*b = append(*b, h)
+	}
+	return n, nil
 }
 
 type addressList []Address

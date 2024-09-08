@@ -85,7 +85,7 @@ func Test_AddressType_Checksum(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
-			assert.Equal(t, tt.addr, MustAddressFromHex(tt.addr).Checksum(keccak256))
+			assert.Equal(t, tt.addr, MustAddressFromHex(tt.addr).Checksum())
 		})
 	}
 }

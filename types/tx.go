@@ -33,10 +33,10 @@ type Transaction interface {
 	Call() Call
 
 	// CalculateHash calculates the hash of the transaction.
-	CalculateHash(h HashFunc) (Hash, error)
+	CalculateHash() (Hash, error)
 
 	// CalculateSigningHash calculates the signing hash of the transaction.
-	CalculateSigningHash(h HashFunc) (Hash, error)
+	CalculateSigningHash() (Hash, error)
 }
 
 // TransactionDecoder is an interface that is used to decode transactions of

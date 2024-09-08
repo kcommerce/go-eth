@@ -167,10 +167,28 @@ func copyBytes(p []byte) []byte {
 	return c
 }
 
+func copySlice[T any](p []T) []T {
+	if p == nil {
+		return nil
+	}
+	c := make([]T, len(p))
+	copy(c, p)
+	return c
+}
+
 func copyBigInt(p *big.Int) *big.Int {
 	if p == nil {
 		return nil
 	}
 	c := new(big.Int).Set(p)
+	return c
+}
+
+func copyHashes(p []Hash) []Hash {
+	if p == nil {
+		return nil
+	}
+	c := make([]Hash, len(p))
+	copy(c, p)
 	return c
 }

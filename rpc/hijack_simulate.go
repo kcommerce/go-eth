@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/crypto/txsign"
 	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
 )
@@ -13,8 +13,7 @@ import (
 // hijackSimulate hijacks "eth_send*Transaction" methods and simulates the
 // transaction execution before sending it.
 type hijackSimulate struct {
-	decoder   types.RPCTransactionDecoder
-	recoverer crypto.Recoverer
+	decoder types.RPCTransactionDecoder
 }
 
 // Call implements the transport.Hijacker interface.
@@ -76,7 +75,7 @@ func (h *hijackSimulate) simulate(ctx context.Context, t transport.Transport, tx
 	// Recover transaction sender if not present:
 	txd := tx.TransactionData()
 	if txc, ok := tx.(types.HasCallData); ok && txd.Signature != nil && txc.CallData().From == nil {
-		from, err := h.recoverer.RecoverTransaction(tx)
+		from, err := txsign.Recover(tx)
 		if err != nil {
 			return fmt.Errorf("unable to recover transaction sender: %w", err)
 		}

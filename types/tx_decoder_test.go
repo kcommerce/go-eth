@@ -135,6 +135,47 @@ func TestTransaction_RLP(t *testing.T) {
 			},
 			rlp: hexutil.MustHexToBytes("02f8d30101843b9aca008477359400830186a0942222222222222222222222222222222222222222880de0b6b3a76400008401020304f85bf859943333333333333333333333333333333333333333f842a04444444444444444444444444444444444444444444444444444444444444444a055555555555555555555555555555555555555555555555555555555555555556fa0a3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad91490a08051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd84"),
 		},
+		{
+			tx:  &TransactionBlob{},
+			rlp: hexutil.MustHexToBytes("03ce8080808080808080c080c0808080"),
+		},
+		{
+			tx: &TransactionBlob{
+				EmbedTransactionData: EmbedTransactionData{
+					Nonce:     ptr(uint64(1)),
+					ChainID:   ptr(uint64(1)),
+					Signature: MustSignatureFromHexPtr("0xa3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad914908051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd846f"),
+				},
+				EmbedCallData: EmbedCallData{
+					To:       MustAddressFromHexPtr("0x2222222222222222222222222222222222222222"),
+					Value:    big.NewInt(1000000000000000000),
+					GasLimit: ptr(uint64(100000)),
+					Input:    []byte{1, 2, 3, 4},
+				},
+				EmbedDynamicFeeData: EmbedDynamicFeeData{
+					MaxPriorityFeePerGas: big.NewInt(1000000000),
+					MaxFeePerGas:         big.NewInt(2000000000),
+				},
+				EmbedAccessListData: EmbedAccessListData{
+					AccessList: []AccessTuple{{
+						Address: MustAddressFromHex("0x3333333333333333333333333333333333333333"),
+						StorageKeys: []Hash{
+							MustHashFromHex("0x4444444444444444444444444444444444444444444444444444444444444444", PadNone),
+							MustHashFromHex("0x5555555555555555555555555555555555555555555555555555555555555555", PadNone),
+						},
+					}},
+				},
+				EmbedBlobData: EmbedBlobData{
+					MaxFeePerBlobGas: big.NewInt(3000000000),
+					Blobs: []Blob{
+						{
+							Hash: MustHashFromHex("0x6666666666666666666666666666666666666666666666666666666666666666", PadNone),
+						},
+					},
+				},
+			},
+			rlp: hexutil.MustHexToBytes("03f8fa0101843b9aca008477359400830186a0942222222222222222222222222222222222222222880de0b6b3a76400008401020304f85bf859943333333333333333333333333333333333333333f842a04444444444444444444444444444444444444444444444444444444444444444a0555555555555555555555555555555555555555555555555555555555555555584b2d05e00e1a066666666666666666666666666666666666666666666666666666666666666666fa0a3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad91490a08051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd84"),
+		},
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t *testing.T) {
@@ -328,7 +369,7 @@ func TestTransaction_JSON(t *testing.T) {
 				  "input": "0x01020304",
 				  "Nonce": "0x1",
 				  "value": "0xde0b6b3a7640000",
-				  "AccessList": [
+				  "accessList": [
 					{
 					  "address": "0x3333333333333333333333333333333333333333",
 					  "storageKeys": [
@@ -336,6 +377,78 @@ func TestTransaction_JSON(t *testing.T) {
 						"0x5555555555555555555555555555555555555555555555555555555555555555"
 					  ]
 					}
+				  ],
+				  "v": "0x6f",
+				  "r": "0xa3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad91490",
+				  "s": "0x8051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd84"
+				}
+			`,
+		},
+		{
+			tx: &TransactionBlob{},
+			json: `
+				{
+				  "type": "0x3"
+				}
+			`,
+		},
+		{
+			tx: &TransactionBlob{
+				EmbedTransactionData: EmbedTransactionData{
+					Nonce:     ptr(uint64(1)),
+					ChainID:   ptr(uint64(1)),
+					Signature: MustSignatureFromHexPtr("0xa3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad914908051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd846f"),
+				},
+				EmbedCallData: EmbedCallData{
+					To:       MustAddressFromHexPtr("0x2222222222222222222222222222222222222222"),
+					Value:    big.NewInt(1000000000000000000),
+					GasLimit: ptr(uint64(100000)),
+					Input:    []byte{1, 2, 3, 4},
+				},
+				EmbedDynamicFeeData: EmbedDynamicFeeData{
+					MaxPriorityFeePerGas: big.NewInt(1000000000),
+					MaxFeePerGas:         big.NewInt(2000000000),
+				},
+				EmbedAccessListData: EmbedAccessListData{
+					AccessList: []AccessTuple{{
+						Address: MustAddressFromHex("0x3333333333333333333333333333333333333333"),
+						StorageKeys: []Hash{
+							MustHashFromHex("0x4444444444444444444444444444444444444444444444444444444444444444", PadNone),
+							MustHashFromHex("0x5555555555555555555555555555555555555555555555555555555555555555", PadNone),
+						},
+					}},
+				},
+				EmbedBlobData: EmbedBlobData{
+					MaxFeePerBlobGas: big.NewInt(3000000000),
+					Blobs: []Blob{
+						{
+							Hash: MustHashFromHex("0x6666666666666666666666666666666666666666666666666666666666666666", PadNone),
+						},
+					},
+				},
+			},
+			json: `
+				{
+				  "chainId": "0x1",
+				  "to": "0x2222222222222222222222222222222222222222",
+				  "gas": "0x186a0",
+				  "maxFeePerGas": "0x77359400",
+				  "maxFeePerBlobGas": "0xb2d05e00",
+				  "maxPriorityFeePerGas": "0x3b9aca00",
+				  "input": "0x01020304",
+				  "Nonce": "0x1",
+				  "value": "0xde0b6b3a7640000",
+				  "accessList": [
+					{
+					  "address": "0x3333333333333333333333333333333333333333",
+					  "storageKeys": [
+						"0x4444444444444444444444444444444444444444444444444444444444444444",
+						"0x5555555555555555555555555555555555555555555555555555555555555555"
+					  ]
+					}
+				  ],
+				  "blobVersionedHashes": [
+					"0x6666666666666666666666666666666666666666666666666666666666666666"
 				  ],
 				  "v": "0x6f",
 				  "r": "0xa3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad91490",

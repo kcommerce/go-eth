@@ -86,6 +86,22 @@ func convertTX(tx types.Transaction, typ types.TransactionType) types.Transactio
 			dftx.SetDynamicFeeData(tx.DynamicFeeData())
 		}
 		return dftx
+	case types.BlobTxType:
+		btx := types.NewTransactionBlob()
+		btx.SetTransactionData(tx.TransactionData())
+		if tx, ok := tx.(types.HasCallData); ok {
+			btx.SetCallData(tx.CallData())
+		}
+		if tx, ok := tx.(types.HasAccessListData); ok {
+			btx.SetAccessListData(tx.AccessListData())
+		}
+		if tx, ok := tx.(types.HasDynamicFeeData); ok {
+			btx.SetDynamicFeeData(tx.DynamicFeeData())
+		}
+		if tx, ok := tx.(types.HasBlobData); ok {
+			btx.SetBlobData(tx.BlobData())
+		}
+		return btx
 	default:
 		return nil
 	}

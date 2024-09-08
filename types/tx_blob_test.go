@@ -11,17 +11,17 @@ import (
 	"github.com/defiweb/go-eth/hexutil"
 )
 
-func TestTransactionDynamicFee_RLP(t *testing.T) {
+func TestTransactionBlob_RLP(t *testing.T) {
 	tests := []struct {
-		tx   *TransactionDynamicFee
+		tx   *TransactionBlob
 		want []byte
 	}{
 		{
-			tx:   &TransactionDynamicFee{},
-			want: hexutil.MustHexToBytes("02cc8080808080808080c0808080"),
+			tx:   &TransactionBlob{},
+			want: hexutil.MustHexToBytes("03ce8080808080808080c080c0808080"),
 		},
 		{
-			tx: &TransactionDynamicFee{
+			tx: &TransactionBlob{
 				EmbedTransactionData: EmbedTransactionData{
 					Nonce:     ptr(uint64(1)),
 					ChainID:   ptr(uint64(1)),
@@ -47,8 +47,16 @@ func TestTransactionDynamicFee_RLP(t *testing.T) {
 						},
 					}},
 				},
+				EmbedBlobData: EmbedBlobData{
+					MaxFeePerBlobGas: big.NewInt(3000000000),
+					Blobs: []Blob{
+						{
+							Hash: MustHashFromHex("0x6666666666666666666666666666666666666666666666666666666666666666", PadNone),
+						},
+					},
+				},
 			},
-			want: hexutil.MustHexToBytes("02f8d30101843b9aca008477359400830186a0942222222222222222222222222222222222222222880de0b6b3a76400008401020304f85bf859943333333333333333333333333333333333333333f842a04444444444444444444444444444444444444444444444444444444444444444a055555555555555555555555555555555555555555555555555555555555555556fa0a3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad91490a08051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd84"),
+			want: hexutil.MustHexToBytes("03f8fa0101843b9aca008477359400830186a0942222222222222222222222222222222222222222880de0b6b3a76400008401020304f85bf859943333333333333333333333333333333333333333f842a04444444444444444444444444444444444444444444444444444444444444444a0555555555555555555555555555555555555555555555555555555555555555584b2d05e00e1a066666666666666666666666666666666666666666666666666666666666666666fa0a3a7b12762dbc5df6cfbedbecdf8a821929c6112d2634abbb0d99dc63ad91490a08051b2c8c7d159db49ad19bd01026156eedab2f3d8c1dfdd07d21c07a4bbdd84"),
 		},
 	}
 	for n, tt := range tests {
@@ -59,7 +67,7 @@ func TestTransactionDynamicFee_RLP(t *testing.T) {
 			assert.Equal(t1, tt.want, rlp)
 
 			// Decode:
-			tx := NewTransactionDynamicFee()
+			tx := NewTransactionBlob()
 			_, err = tx.DecodeRLP(rlp)
 			tx.From = tt.tx.From
 			require.NoError(t1, err)
@@ -68,17 +76,17 @@ func TestTransactionDynamicFee_RLP(t *testing.T) {
 	}
 }
 
-func TestTransactionDynamicFee_CalculateSigningHash(t *testing.T) {
+func TestTransactionBlob_CalculateSigningHash(t *testing.T) {
 	tests := []struct {
-		tx   *TransactionDynamicFee
+		tx   *TransactionBlob
 		want Hash
 	}{
 		{
-			tx:   &TransactionDynamicFee{},
-			want: MustHashFromHex("0x292edeba1be7c90f4dbaed50c44b7f6378633f933202ffe4f547e5a5c2ca3304", PadNone),
+			tx:   &TransactionBlob{},
+			want: MustHashFromHex("0x846c9b47f161837f5068b0ffb0c1a98785302f89d613338ccfa9a1c72c9f951d", PadNone),
 		},
 		{
-			tx: &TransactionDynamicFee{
+			tx: &TransactionBlob{
 				EmbedTransactionData: EmbedTransactionData{
 					ChainID: ptr(uint64(1)),
 					Nonce:   ptr(uint64(1)),
@@ -94,10 +102,10 @@ func TestTransactionDynamicFee_CalculateSigningHash(t *testing.T) {
 					MaxFeePerGas:         big.NewInt(2000000000),
 				},
 			},
-			want: MustHashFromHex("0xc3266152306909bfe339f90fad4f73f958066860300b5a22b98ee6a1d629706c", PadNone),
+			want: MustHashFromHex("0x0604b49731147cf745c666f1a67bf1b5e9fbee127085b3d4c4958191590e8bce", PadNone),
 		},
 		{
-			tx: &TransactionDynamicFee{
+			tx: &TransactionBlob{
 				EmbedTransactionData: EmbedTransactionData{
 					ChainID: ptr(uint64(1)),
 					Nonce:   ptr(uint64(1)),
@@ -123,8 +131,16 @@ func TestTransactionDynamicFee_CalculateSigningHash(t *testing.T) {
 					MaxPriorityFeePerGas: big.NewInt(1000000000),
 					MaxFeePerGas:         big.NewInt(2000000000),
 				},
+				EmbedBlobData: EmbedBlobData{
+					MaxFeePerBlobGas: big.NewInt(3000000000),
+					Blobs: []Blob{
+						{
+							Hash: MustHashFromHex("0x6666666666666666666666666666666666666666666666666666666666666666", PadNone),
+						},
+					},
+				},
 			},
-			want: MustHashFromHex("0xa66ab756479bfd56f29658a8a199319094e84711e8a2de073ec136ef5179c4c9", PadNone),
+			want: MustHashFromHex("0x3faa63efab3e460606c31cd9a2e8791d87e91954137571eddb3b4b0abc69e2cd", PadNone),
 		},
 	}
 	for n, tt := range tests {

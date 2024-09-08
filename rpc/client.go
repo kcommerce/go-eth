@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/defiweb/go-eth/crypto"
 	"github.com/defiweb/go-eth/rpc/transport"
 	"github.com/defiweb/go-eth/types"
 	"github.com/defiweb/go-eth/wallet"
@@ -61,7 +60,7 @@ func WithTransactionDecoder(decoder types.TransactionDecoder) ClientOption {
 func WithPostHijackers(hijackers ...transport.Hijacker) ClientOption {
 	return &option{
 		apply: func(ctx *ClientOptionsContext, _ any) error {
-			ctx.Transport = addHijacker(ctx.Transport, &hijackSimulate{})
+			ctx.Transport = addHijacker(ctx.Transport, hijackers...)
 			return nil
 		},
 		order: 100,
@@ -272,7 +271,7 @@ func WithChainID(opts ChainIDOptions) ClientOption {
 func WithPreHijackers(hijackers ...transport.Hijacker) ClientOption {
 	return &option{
 		apply: func(ctx *ClientOptionsContext, _ any) error {
-			ctx.Transport = addHijacker(ctx.Transport, &hijackSimulate{recoverer: crypto.ECRecoverer})
+			ctx.Transport = addHijacker(ctx.Transport, hijackers...)
 			return nil
 		},
 		order: 1000,

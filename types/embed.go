@@ -30,6 +30,11 @@ type HasDynamicFeeData interface {
 	SetDynamicFeeData(data *EmbedDynamicFeeData)
 }
 
+type HasBlobData interface {
+	BlobData() *EmbedBlobData
+	SetBlobData(data *EmbedBlobData)
+}
+
 // EmbedCallData is set of common fields for calls and transactions.
 type EmbedCallData struct {
 	From     *Address // From is the sender address.
@@ -193,5 +198,45 @@ func (c *EmbedDynamicFeeData) Copy() *EmbedDynamicFeeData {
 	return &EmbedDynamicFeeData{
 		MaxFeePerGas:         copyBigInt(c.MaxFeePerGas),
 		MaxPriorityFeePerGas: copyBigInt(c.MaxPriorityFeePerGas),
+	}
+}
+
+type EmbedBlobData struct {
+	MaxFeePerBlobGas *big.Int
+	Blobs            []Blob
+}
+
+func (c *EmbedBlobData) BlobData() *EmbedBlobData {
+	return c
+}
+
+func (c *EmbedBlobData) SetBlobData(data *EmbedBlobData) {
+	*c = *data
+}
+
+func (c *EmbedBlobData) SetMaxFeePerBlobGas(maxFeePerBlobGas *big.Int) {
+	c.MaxFeePerBlobGas = maxFeePerBlobGas
+}
+
+func (c *EmbedBlobData) SetBlobs(blobs []Blob) {
+	c.Blobs = blobs
+}
+
+func (c *EmbedBlobData) AddBlob(blob Blob) {
+	c.Blobs = append(c.Blobs, blob)
+}
+
+func (c *EmbedBlobData) Copy() *EmbedBlobData {
+	if c == nil {
+		return nil
+	}
+	blobs := make([]Blob, len(c.Blobs))
+	for i, blob := range c.Blobs {
+		blobs[i].Hash = blob.Hash
+		blobs[i].Sidecar = copyPtr(blob.Sidecar)
+	}
+	return &EmbedBlobData{
+		MaxFeePerBlobGas: copyBigInt(c.MaxFeePerBlobGas),
+		Blobs:            blobs,
 	}
 }

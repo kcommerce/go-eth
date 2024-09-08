@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/defiweb/go-rlp"
+
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/crypto/kzg4844"
 )
 
 // AccessList is an EIP-2930 access list.
@@ -103,6 +106,49 @@ func (a *AccessTuple) DecodeRLP(data []byte) (int, error) {
 		a.StorageKeys = append(a.StorageKeys, hash)
 	}
 	return n, nil
+}
+
+// Blob is an EIP-4844 blob for blob-carrying transactions.
+type Blob struct {
+	Hash    Hash         // Hash is the hash of the blob.
+	Sidecar *BlobSidecar // Sidecar is an optional sidecar for the blob.
+}
+
+// BlobSidecar is part of the blob that is stored by the consensus layer.
+type BlobSidecar struct {
+	Blob       kzg4844.Blob       // Blob needed by the blob pool
+	Commitment kzg4844.Commitment // Commitment needed by the blob pool
+	Proof      kzg4844.Proof      // Proof needed by the blob pool
+}
+
+func NewBlob(data []byte) (Blob, error) {
+	if len(data) > kzg4844.BlobLength {
+		return Blob{}, fmt.Errorf("blob length exceeds maximum length of %d", kzg4844.BlobLength)
+	}
+	b := &kzg4844.Blob{}
+	copy(b[:], data)
+	c, err := crypto.KZGBlobToCommitment(b)
+	if err != nil {
+		return Blob{}, err
+	}
+	p, err := crypto.KZGComputeBlobProof(b, c)
+	if err != nil {
+		return Blob{}, err
+	}
+	s := &BlobSidecar{
+		Blob:       *b,
+		Commitment: c,
+		Proof:      p,
+	}
+	return Blob{
+		Hash:    s.ComputeHash(),
+		Sidecar: s,
+	}, nil
+}
+
+// ComputeHash computes the blob hash of the given blob sidecar.
+func (sc *BlobSidecar) ComputeHash() Hash {
+	return crypto.KZGComputeBlobHashV1(sc.Commitment)
 }
 
 type TransactionOnChain struct {
@@ -590,4 +636,11 @@ type jsonFilterLogsQuery struct {
 	ToBlock   *BlockNumber `json:"toBlock,omitempty"`
 	Topics    []hashList   `json:"topics"`
 	BlockHash *Hash        `json:"blockhash,omitempty"`
+}
+
+// SyncStatus represents the sync status of a node.
+type SyncStatus struct {
+	StartingBlock BlockNumber `json:"startingBlock"`
+	CurrentBlock  BlockNumber `json:"currentBlock"`
+	HighestBlock  BlockNumber `json:"highestBlock"`
 }

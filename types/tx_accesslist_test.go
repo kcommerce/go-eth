@@ -126,7 +126,7 @@ func TestTransactionAccessList_CalculateSigningHash(t *testing.T) {
 	}
 	for n, tt := range tests {
 		t.Run(fmt.Sprintf("case-%d", n+1), func(t1 *testing.T) {
-			sh, err := tt.tx.CalculateSigningHash(keccak256)
+			sh, err := tt.tx.CalculateSigningHash()
 			require.NoError(t1, err)
 			require.Equal(t1, tt.want, sh)
 		})

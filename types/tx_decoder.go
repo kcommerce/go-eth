@@ -13,6 +13,7 @@ var DefaultTransactionDecoder = &TypedTransactionDecoder{
 		LegacyTxType:     func() Transaction { return NewTransactionLegacy() },
 		AccessListTxType: func() Transaction { return NewTransactionAccessList() },
 		DynamicFeeTxType: func() Transaction { return NewTransactionDynamicFee() },
+		BlobTxType:       func() Transaction { return NewTransactionBlob() },
 	},
 	IgnoreUnknownTypes: true,
 }
@@ -107,11 +108,11 @@ func (t *TransactionUnknown) Type() TransactionType { return t.UnknownType }
 
 func (t *TransactionUnknown) Call() Call { return nil }
 
-func (t *TransactionUnknown) CalculateHash(_ HashFunc) (Hash, error) {
+func (t *TransactionUnknown) CalculateHash() (Hash, error) {
 	return ZeroHash, fmt.Errorf("unable to calculate hash of unknown transaction type: %d", t.UnknownType)
 }
 
-func (t *TransactionUnknown) CalculateSigningHash(_ HashFunc) (Hash, error) {
+func (t *TransactionUnknown) CalculateSigningHash() (Hash, error) {
 	return ZeroHash, fmt.Errorf("unable to calculate signing hash of unknown transaction type: %d", t.UnknownType)
 }
 
@@ -125,12 +126,16 @@ func jsonTXType(data []byte) (TransactionType, error) {
 		Type         *Number         `json:"type"`
 		AccessList   *nilUnmarshaler `json:"accessList"`
 		MaxFeePerGas *nilUnmarshaler `json:"maxFeePerGas"`
+		BlobHashes   *nilUnmarshaler `json:"blobVersionedHashes"`
 	}
 	if err := json.Unmarshal(data, &tx); err != nil {
 		return 0, fmt.Errorf("failed to unmarshal transaction: %w", err)
 	}
 	if tx.Type != nil {
 		return TransactionType((*tx.Type).Big().Uint64()), nil
+	}
+	if tx.BlobHashes != nil {
+		return BlobTxType, nil
 	}
 	if tx.MaxFeePerGas != nil {
 		return DynamicFeeTxType, nil

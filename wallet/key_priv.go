@@ -2,24 +2,20 @@ package wallet
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/rand"
 	"encoding/json"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 
 	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/crypto/ecdsa"
+	"github.com/defiweb/go-eth/crypto/txsign"
 	"github.com/defiweb/go-eth/types"
 )
-
-var s256 = btcec.S256()
 
 type PrivateKey struct {
 	private *ecdsa.PrivateKey
 	public  *ecdsa.PublicKey
 	address types.Address
-	sign    crypto.Signer
-	recover crypto.Recoverer
 }
 
 // NewKeyFromECDSA creates a new private key from an ecdsa.PrivateKey.
@@ -27,9 +23,7 @@ func NewKeyFromECDSA(prv *ecdsa.PrivateKey) *PrivateKey {
 	return &PrivateKey{
 		private: prv,
 		public:  &prv.PublicKey,
-		address: crypto.ECPublicKeyToAddress(&prv.PublicKey),
-		sign:    crypto.ECSigner(prv),
-		recover: crypto.ECRecoverer,
+		address: types.Address(crypto.ECPublicKeyToAddress(&prv.PublicKey)),
 	}
 }
 
@@ -41,7 +35,7 @@ func NewKeyFromBytes(prv []byte) *PrivateKey {
 
 // NewRandomKey creates a random private key.
 func NewRandomKey() *PrivateKey {
-	key, err := ecdsa.GenerateKey(s256, rand.Reader)
+	key, err := ecdsa.GenerateKey()
 	if err != nil {
 		panic(err)
 	}
@@ -74,33 +68,41 @@ func (k *PrivateKey) Address() types.Address {
 
 // SignHash implements the KeyWithHashSigner interface.
 func (k *PrivateKey) SignHash(_ context.Context, hash types.Hash) (*types.Signature, error) {
-	return k.sign.SignHash(hash)
+	s, err := crypto.ECSignHash(k.private, ecdsa.Hash(hash))
+	if err != nil {
+		return nil, err
+	}
+	return (*types.Signature)(s), nil
 }
 
 // SignMessage implements the Key interface.
 func (k *PrivateKey) SignMessage(_ context.Context, data []byte) (*types.Signature, error) {
-	return k.sign.SignMessage(data)
+	s, err := crypto.ECSignMessage(k.private, data)
+	if err != nil {
+		return nil, err
+	}
+	return (*types.Signature)(s), nil
 }
 
 // SignTransaction implements the Key interface.
 func (k *PrivateKey) SignTransaction(_ context.Context, tx types.Transaction) error {
-	return k.sign.SignTransaction(tx)
+	return txsign.Sign(k.private, tx)
 }
 
 // VerifyHash implements the KeyWithHashSigner interface.
 func (k *PrivateKey) VerifyHash(_ context.Context, hash types.Hash, sig types.Signature) bool {
-	addr, err := k.recover.RecoverHash(hash, sig)
+	addr, err := crypto.ECRecoverHash(ecdsa.Hash(hash), ecdsa.Signature(sig))
 	if err != nil {
 		return false
 	}
-	return *addr == k.address
+	return types.Address(*addr) == k.address
 }
 
 // VerifyMessage implements the Key interface.
 func (k *PrivateKey) VerifyMessage(_ context.Context, data []byte, sig types.Signature) bool {
-	addr, err := k.recover.RecoverMessage(data, sig)
+	addr, err := crypto.ECRecoverMessage(data, ecdsa.Signature(sig))
 	if err != nil {
 		return false
 	}
-	return *addr == k.address
+	return types.Address(*addr) == k.address
 }
