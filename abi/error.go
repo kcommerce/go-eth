@@ -193,6 +193,6 @@ func (e *Error) generateSignature() {
 }
 
 func (e *Error) calculateFourBytes() {
-	id := crypto.Keccak256([]byte(e.Signature()))
+	id := crypto.Keccak([]byte(e.Signature()))
 	copy(e.fourBytes[:], id[:4])
 }
