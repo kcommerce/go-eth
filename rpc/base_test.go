@@ -845,6 +845,57 @@ func TestBaseClient_SendRawTransaction(t *testing.T) {
 	assert.Equal(t, types.MustHashFromHex("0x1111111111111111111111111111111111111111111111111111111111111111", types.PadNone), *txHash)
 }
 
+const mockSendPrivateTransactionRequest = `
+	{
+	  "jsonrpc": "2.0",
+	  "id": 1,
+	  "method": "eth_sendPrivateTransaction",
+	  "params": [
+		{
+ 		  "tx": "0xf893808609184e72a0008276c094d46e8dd67c5d32be8058bb8eb970870f072445678502540be400a9d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f07244567511a02222222222222222222222222222222222222222222222222222222222222222a03333333333333333333333333333333333333333333333333333333333333333",
+          "maxBlockNumber": "0x2540be400",
+		  "preferences": {
+            "fast": true
+          }
+	  	}	
+	  ]
+	}
+`
+
+const mockSendPrivateTransactionResponse = `
+	{
+	  "jsonrpc": "2.0",
+	  "id": 1,
+	  "result": "0x1111111111111111111111111111111111111111111111111111111111111111"
+	}
+`
+
+func TestBaseClient_SendPrivateTransaction(t *testing.T) {
+	httpMock := newHTTPMock()
+	client := &baseClient{transport: httpMock}
+
+	httpMock.ResponseMock = &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewBufferString(mockSendPrivateTransactionResponse)),
+	}
+
+	signedRawTx := hexToBytes("0xf893808609184e72a0008276c094d46e8dd67c5d32be8058bb8eb970870f072445678502540be400a9d46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f07244567511a02222222222222222222222222222222222222222222222222222222222222222a03333333333333333333333333333333333333333333333333333333333333333")
+	maxBlockNumber, _ := types.BlockNumberFromHex("0x2540be400")
+	fast := true
+
+	txHash, err := client.SendPrivateTransaction(
+		context.Background(),
+		&types.PrivateTransaction{
+			Tx:             signedRawTx,
+			MaxBlockNumber: &maxBlockNumber,
+			Fast:           fast,
+		},
+	)
+	require.NoError(t, err)
+	assert.JSONEq(t, mockSendPrivateTransactionRequest, readBody(httpMock.Request))
+	assert.Equal(t, types.MustHashFromHex("0x1111111111111111111111111111111111111111111111111111111111111111", types.PadNone), *txHash)
+}
+
 const mockCallRequest = `
 	{
 	  "jsonrpc": "2.0",

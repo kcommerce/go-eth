@@ -124,6 +124,15 @@ type RPC interface {
 	// It sends an encoded transaction to the network.
 	SendRawTransaction(ctx context.Context, data []byte) (*types.Hash, error)
 
+	// SendPrivateTransaction performs eth_sendTransaction RPC call.
+	//
+	// Sends a single transaction to Flashbots for frontrunning and revert protection
+	// without the complexity of sending it as a bundle. The API credit value for this method is 20.
+	//
+	// Please note that this RPC method requires the Flashbots Protect add-on enabled on your Node endpoint.
+	// Also, it is supported only supported on Ethereum mainnet.
+	SendPrivateTransaction(ctx context.Context, tx *types.PrivateTransaction) (*types.Hash, error)
+
 	// Call performs eth_call RPC call.
 	//
 	// It executes a new message call immediately without creating a

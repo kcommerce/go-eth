@@ -239,6 +239,15 @@ func (c *baseClient) SendRawTransaction(ctx context.Context, data []byte) (*type
 	return &res, nil
 }
 
+// SendPrivateTransaction implements the RPC interface.
+func (c *baseClient) SendPrivateTransaction(ctx context.Context, tx *types.PrivateTransaction) (*types.Hash, error) {
+	var res types.Hash
+	if err := c.transport.Call(ctx, &res, "eth_sendPrivateTransaction", tx); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 // Call implements the RPC interface.
 func (c *baseClient) Call(ctx context.Context, call *types.Call, block types.BlockNumber) ([]byte, *types.Call, error) {
 	if call == nil {

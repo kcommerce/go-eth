@@ -1251,3 +1251,60 @@ type jsonFilterLogsQuery struct {
 	Topics    []hashList   `json:"topics"`
 	BlockHash *Hash        `json:"blockhash,omitempty"`
 }
+
+type PrivateTransaction struct {
+	Tx             Bytes        // Tx Raw, signed transaction
+	MaxBlockNumber *BlockNumber // MaxBlockNumber Hex-encoded number for highest block number in which the transaction should be included.
+	Fast           bool         // Fast Sends transaction with fast mode when true.
+}
+
+func NewPrivateTransaction() *PrivateTransaction {
+	return &PrivateTransaction{}
+}
+
+func (t *PrivateTransaction) SetTx(tx []byte) *PrivateTransaction {
+	t.Tx = tx
+	return t
+}
+
+func (t *PrivateTransaction) SetMaxBlockNumber(maxBlockNumber *BlockNumber) *PrivateTransaction {
+	t.MaxBlockNumber = maxBlockNumber
+	return t
+}
+
+func (t *PrivateTransaction) SetFast(fast bool) *PrivateTransaction {
+	t.Fast = fast
+	return t
+}
+
+func (t PrivateTransaction) MarshalJSON() ([]byte, error) {
+	privateTransaction := &jsonPrivateTransaction{
+		Tx:             t.Tx,
+		MaxBlockNumber: t.MaxBlockNumber,
+		Preferences: jsonPrivateTransactionPreferences{
+			Fast: t.Fast,
+		},
+	}
+	return json.Marshal(privateTransaction)
+}
+
+func (t *PrivateTransaction) UnmarshalJSON(input []byte) error {
+	privateTransaction := &jsonPrivateTransaction{}
+	if err := json.Unmarshal(input, privateTransaction); err != nil {
+		return err
+	}
+	t.Tx = privateTransaction.Tx
+	t.MaxBlockNumber = privateTransaction.MaxBlockNumber
+	t.Fast = privateTransaction.Preferences.Fast
+	return nil
+}
+
+type jsonPrivateTransaction struct {
+	Tx             Bytes                             `json:"tx"`
+	MaxBlockNumber *BlockNumber                      `json:"maxBlockNumber,omitempty"`
+	Preferences    jsonPrivateTransactionPreferences `json:"preferences"`
+}
+
+type jsonPrivateTransactionPreferences struct {
+	Fast bool `json:"fast"`
+}
