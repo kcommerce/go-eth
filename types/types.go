@@ -154,15 +154,15 @@ func (t *Address) UnmarshalText(input []byte) error {
 }
 
 func (t Address) EncodeRLP() ([]byte, error) {
-	return rlp.Encode(rlp.NewBytes(t[:]))
+	return rlp.Encode(rlp.Bytes(t[:]))
 }
 
 func (t *Address) DecodeRLP(data []byte) (int, error) {
-	r, n, err := rlp.Decode(data)
+	r, n, err := rlp.DecodeLazy(data)
 	if err != nil {
 		return 0, err
 	}
-	a, err := r.GetBytes()
+	a, err := r.Bytes()
 	if err != nil {
 		return 0, err
 	}
@@ -362,15 +362,15 @@ func (t *Hash) UnmarshalText(input []byte) error {
 }
 
 func (t Hash) EncodeRLP() ([]byte, error) {
-	return rlp.Encode(rlp.NewBytes(t[:]))
+	return rlp.Encode(rlp.Bytes(t[:]))
 }
 
 func (t *Hash) DecodeRLP(data []byte) (int, error) {
-	r, n, err := rlp.Decode(data)
+	r, n, err := rlp.DecodeLazy(data)
 	if err != nil {
 		return 0, err
 	}
-	b, err := r.GetBytes()
+	b, err := r.Bytes()
 	if err != nil {
 		return 0, err
 	}
@@ -1038,79 +1038,20 @@ func (b *Bytes) UnmarshalText(input []byte) error {
 // Internal types:
 //
 
-const bloomLength = 256
+const (
+	bloomLength = 256
+	nonceLength = 8
+)
 
-type hexBloom [bloomLength]byte
-
-func bloomFromBytes(x []byte) hexBloom {
-	var b [bloomLength]byte
-	if len(x) > len(b) {
-		return b
-	}
-	copy(b[bloomLength-len(x):], x)
-	return b
-}
-
-func (t *hexBloom) Bytes() []byte {
-	return t[:]
-}
-
-func (t *hexBloom) String() string {
-	if t == nil {
-		return ""
-	}
-	return hexutil.BytesToHex(t[:])
-}
-
-func (t hexBloom) MarshalJSON() ([]byte, error) {
-	return bytesMarshalJSON(t[:]), nil
-}
-
-func (t *hexBloom) UnmarshalJSON(input []byte) error {
-	return fixedBytesUnmarshalJSON(input, t[:])
-}
-
-func (t hexBloom) MarshalText() ([]byte, error) {
-	return bytesMarshalText(t[:]), nil
-}
-
-func (t *hexBloom) UnmarshalText(input []byte) error {
-	return fixedBytesUnmarshalText(input, t[:])
-}
-
-const nonceLength = 8
-
-type hexNonce [nonceLength]byte
-
-func nonceFromBigInt(x *big.Int) hexNonce {
-	if x == nil {
-		return hexNonce{}
-	}
-	return nonceFromBytes(x.Bytes())
-}
-
-func nonceFromBytes(x []byte) hexNonce {
-	var n hexNonce
-	if len(x) > len(n) {
-		return n
-	}
-	copy(n[nonceLength-len(x):], x)
-	return n
-}
-
-func (t *hexNonce) Big() *big.Int {
-	return new(big.Int).SetBytes(t[:])
-}
-
-func (t hexNonce) MarshalJSON() ([]byte, error) {
-	return bytesMarshalJSON(t[:]), nil
-}
-
-func (t *hexNonce) UnmarshalJSON(input []byte) error {
-	return fixedBytesUnmarshalJSON(input, t[:])
-}
-
-type kzgBlob [kzg4844.BlobLength]byte
+type (
+	kzgBlob       [kzg4844.BlobLength]byte
+	kzgCommitment [kzg4844.CommitmentLength]byte
+	kzgProof      [kzg4844.ProofLength]byte
+	bloom         [bloomLength]byte
+	nonce         [nonceLength]byte
+	hashList      []Hash
+	addressList   []Address
+)
 
 func (t kzgBlob) MarshalJSON() ([]byte, error) {
 	return bytesMarshalJSON(t[:]), nil
@@ -1120,7 +1061,13 @@ func (t *kzgBlob) UnmarshalJSON(input []byte) error {
 	return fixedBytesUnmarshalJSON(input, t[:])
 }
 
-type kzgCommitment [kzg4844.CommitmentLength]byte
+func (t kzgBlob) EncodeRLP() ([]byte, error) {
+	return fixedBytesEncodeRLP(t[:])
+}
+
+func (t *kzgBlob) DecodeRLP(data []byte) (int, error) {
+	return fixedBytesDecodeRLP(data, t[:])
+}
 
 func (t kzgCommitment) MarshalJSON() ([]byte, error) {
 	return bytesMarshalJSON(t[:]), nil
@@ -1130,7 +1077,13 @@ func (t *kzgCommitment) UnmarshalJSON(input []byte) error {
 	return fixedBytesUnmarshalJSON(input, t[:])
 }
 
-type kzgProof [kzg4844.ProofLength]byte
+func (t kzgCommitment) EncodeRLP() ([]byte, error) {
+	return fixedBytesEncodeRLP(t[:])
+}
+
+func (t *kzgCommitment) DecodeRLP(data []byte) (int, error) {
+	return fixedBytesDecodeRLP(data, t[:])
+}
 
 func (t kzgProof) MarshalJSON() ([]byte, error) {
 	return bytesMarshalJSON(t[:]), nil
@@ -1140,7 +1093,62 @@ func (t *kzgProof) UnmarshalJSON(input []byte) error {
 	return fixedBytesUnmarshalJSON(input, t[:])
 }
 
-type hashList []Hash
+func (t kzgProof) EncodeRLP() ([]byte, error) {
+	return fixedBytesEncodeRLP(t[:])
+}
+
+func (t *kzgProof) DecodeRLP(data []byte) (int, error) {
+	return fixedBytesDecodeRLP(data, t[:])
+}
+
+func bloomFromBytes(x []byte) bloom {
+	var b [bloomLength]byte
+	if len(x) > len(b) {
+		return b
+	}
+	copy(b[bloomLength-len(x):], x)
+	return b
+}
+
+func (t *bloom) Bytes() []byte {
+	return t[:]
+}
+
+func (t bloom) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *bloom) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
+
+func nonceFromBigInt(x *big.Int) nonce {
+	if x == nil {
+		return nonce{}
+	}
+	return nonceFromBytes(x.Bytes())
+}
+
+func nonceFromBytes(x []byte) nonce {
+	var n nonce
+	if len(x) > len(n) {
+		return n
+	}
+	copy(n[nonceLength-len(x):], x)
+	return n
+}
+
+func (t *nonce) Big() *big.Int {
+	return new(big.Int).SetBytes(t[:])
+}
+
+func (t nonce) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *nonce) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
 
 func (b hashList) MarshalJSON() ([]byte, error) {
 	if len(b) == 1 {
@@ -1158,34 +1166,25 @@ func (b *hashList) UnmarshalJSON(input []byte) error {
 }
 
 func (b *hashList) EncodeRLP() ([]byte, error) {
-	l := rlp.NewList()
-	for _, hash := range *b {
-		hash := hash
-		l.Append(&hash)
+	l := make(rlp.TypedList[Hash], len(*b))
+	for n, _ := range *b {
+		l[n] = &(*b)[n]
 	}
 	return rlp.Encode(l)
 }
 
 func (b *hashList) DecodeRLP(data []byte) (int, error) {
-	d, n, err := rlp.Decode(data)
+	l := make(rlp.TypedList[Hash], 0)
+	n, err := rlp.Decode(data, &l)
 	if err != nil {
 		return 0, err
 	}
-	l, err := d.GetList()
-	if err != nil {
-		return 0, err
-	}
-	for _, hash := range l {
-		var h Hash
-		if err := hash.DecodeTo(&h); err != nil {
-			return 0, err
-		}
-		*b = append(*b, h)
+	*b = make(hashList, len(l))
+	for n, hash := range l {
+		(*b)[n] = *hash
 	}
 	return n, nil
 }
-
-type addressList []Address
 
 func (t addressList) MarshalJSON() ([]byte, error) {
 	if len(t) == 1 {

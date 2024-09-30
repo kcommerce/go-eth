@@ -50,6 +50,7 @@ func (t *TransactionDynamicFee) CalculateSigningHash() (Hash, error) {
 		maxFeePerGas         = big.NewInt(0)
 		to                   = ([]byte)(nil)
 		value                = big.NewInt(0)
+		input                = ([]byte)(nil)
 		accessList           = (AccessList)(nil)
 	)
 	if t.ChainID != nil {
@@ -73,20 +74,23 @@ func (t *TransactionDynamicFee) CalculateSigningHash() (Hash, error) {
 	if t.Value != nil {
 		value = t.Value
 	}
+	if t.Input != nil {
+		input = t.Input
+	}
 	if t.AccessList != nil {
 		accessList = t.AccessList
 	}
-	bin, err := rlp.NewList(
-		rlp.NewUint(chainID),
-		rlp.NewUint(nonce),
-		rlp.NewBigInt(maxPriorityFeePerGas),
-		rlp.NewBigInt(maxFeePerGas),
-		rlp.NewUint(gasLimit),
-		rlp.NewBytes(to),
-		rlp.NewBigInt(value),
-		rlp.NewBytes(t.Input),
+	bin, err := rlp.List{
+		rlp.Uint(chainID),
+		rlp.Uint(nonce),
+		(*rlp.BigInt)(maxPriorityFeePerGas),
+		(*rlp.BigInt)(maxFeePerGas),
+		rlp.Uint(gasLimit),
+		rlp.Bytes(to),
+		(*rlp.BigInt)(value),
+		rlp.Bytes(input),
 		&accessList,
-	).EncodeRLP()
+	}.EncodeRLP()
 	if err != nil {
 		return ZeroHash, err
 	}
@@ -104,6 +108,7 @@ func (t TransactionDynamicFee) EncodeRLP() ([]byte, error) {
 		maxFeePerGas         = big.NewInt(0)
 		to                   = ([]byte)(nil)
 		value                = big.NewInt(0)
+		input                = ([]byte)(nil)
 		accessList           = (AccessList)(nil)
 		v                    = big.NewInt(0)
 		r                    = big.NewInt(0)
@@ -130,6 +135,9 @@ func (t TransactionDynamicFee) EncodeRLP() ([]byte, error) {
 	if t.Value != nil {
 		value = t.Value
 	}
+	if t.Input != nil {
+		input = t.Input
+	}
 	if t.AccessList != nil {
 		accessList = t.AccessList
 	}
@@ -138,20 +146,20 @@ func (t TransactionDynamicFee) EncodeRLP() ([]byte, error) {
 		r = t.Signature.R
 		s = t.Signature.S
 	}
-	bin, err := rlp.NewList(
-		rlp.NewUint(chainID),
-		rlp.NewUint(nonce),
-		rlp.NewBigInt(maxPriorityFeePerGas),
-		rlp.NewBigInt(maxFeePerGas),
-		rlp.NewUint(gasLimit),
-		rlp.NewBytes(to),
-		rlp.NewBigInt(value),
-		rlp.NewBytes(t.Input),
+	bin, err := rlp.List{
+		rlp.Uint(chainID),
+		rlp.Uint(nonce),
+		(*rlp.BigInt)(maxPriorityFeePerGas),
+		(*rlp.BigInt)(maxFeePerGas),
+		rlp.Uint(gasLimit),
+		rlp.Bytes(to),
+		(*rlp.BigInt)(value),
+		rlp.Bytes(input),
 		&accessList,
-		rlp.NewBigInt(v),
-		rlp.NewBigInt(r),
-		rlp.NewBigInt(s),
-	).EncodeRLP()
+		(*rlp.BigInt)(v),
+		(*rlp.BigInt)(r),
+		(*rlp.BigInt)(s),
+	}.EncodeRLP()
 	if err != nil {
 		return nil, err
 	}
@@ -169,21 +177,20 @@ func (t *TransactionDynamicFee) DecodeRLP(data []byte) (int, error) {
 	}
 	data = data[1:]
 	var (
-		list                 *rlp.ListItem
-		chainID              = &rlp.UintItem{}
-		nonce                = &rlp.UintItem{}
-		gasLimit             = &rlp.UintItem{}
-		maxPriorityFeePerGas = &rlp.BigIntItem{}
-		maxFeePerGas         = &rlp.BigIntItem{}
-		to                   = &rlp.StringItem{}
-		value                = &rlp.BigIntItem{}
-		input                = &rlp.StringItem{}
-		accessList           = &AccessList{}
-		v                    = &rlp.BigIntItem{}
-		r                    = &rlp.BigIntItem{}
-		s                    = &rlp.BigIntItem{}
+		chainID              = new(rlp.Uint)
+		nonce                = new(rlp.Uint)
+		gasLimit             = new(rlp.Uint)
+		maxPriorityFeePerGas = new(rlp.BigInt)
+		maxFeePerGas         = new(rlp.BigInt)
+		to                   = new(rlp.Bytes)
+		value                = new(rlp.BigInt)
+		input                = new(rlp.Bytes)
+		accessList           = new(AccessList)
+		v                    = new(rlp.BigInt)
+		r                    = new(rlp.BigInt)
+		s                    = new(rlp.BigInt)
 	)
-	list = rlp.NewList(
+	list := rlp.List{
 		chainID,
 		nonce,
 		maxPriorityFeePerGas,
@@ -196,42 +203,42 @@ func (t *TransactionDynamicFee) DecodeRLP(data []byte) (int, error) {
 		v,
 		r,
 		s,
-	)
-	if _, err := rlp.DecodeTo(data, list); err != nil {
+	}
+	if _, err := rlp.Decode(data, &list); err != nil {
 		return 0, err
 	}
-	if chainID.X != 0 {
-		t.ChainID = &chainID.X
+	if chainID.Get() != 0 {
+		t.ChainID = chainID.Ptr()
 	}
-	if nonce.X != 0 {
-		t.Nonce = &nonce.X
+	if nonce.Get() != 0 {
+		t.Nonce = nonce.Ptr()
 	}
-	if maxPriorityFeePerGas.X.Sign() != 0 {
-		t.MaxPriorityFeePerGas = maxPriorityFeePerGas.X
+	if maxPriorityFeePerGas.Ptr().Sign() != 0 {
+		t.MaxPriorityFeePerGas = maxPriorityFeePerGas.Ptr()
 	}
-	if maxFeePerGas.X.Sign() != 0 {
-		t.MaxFeePerGas = maxFeePerGas.X
+	if maxFeePerGas.Ptr().Sign() != 0 {
+		t.MaxFeePerGas = maxFeePerGas.Ptr()
 	}
-	if gasLimit.X != 0 {
-		t.GasLimit = &gasLimit.X
+	if gasLimit.Get() != 0 {
+		t.GasLimit = gasLimit.Ptr()
 	}
-	if len(to.Bytes()) > 0 {
-		t.To = AddressFromBytesPtr(to.Bytes())
+	if len(to.Get()) > 0 {
+		t.To = AddressFromBytesPtr(to.Get())
 	}
-	if value.X.Sign() != 0 {
-		t.Value = value.X
+	if value.Ptr().Sign() != 0 {
+		t.Value = value.Ptr()
 	}
-	if len(input.Bytes()) > 0 {
-		t.Input = input.Bytes()
+	if len(input.Get()) > 0 {
+		t.Input = input.Get()
 	}
 	if len(*accessList) > 0 {
 		t.AccessList = *accessList
 	}
-	if v.X.Sign() != 0 || r.X.Sign() != 0 || s.X.Sign() != 0 {
+	if v.Ptr().Sign() != 0 || r.Ptr().Sign() != 0 || s.Ptr().Sign() != 0 {
 		t.Signature = &Signature{
-			V: v.X,
-			R: r.X,
-			S: s.X,
+			V: v.Ptr(),
+			R: r.Ptr(),
+			S: s.Ptr(),
 		}
 	}
 	return len(data), nil

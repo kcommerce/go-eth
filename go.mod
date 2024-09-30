@@ -10,7 +10,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/crate-crypto/go-kzg-4844 v1.1.0
 	github.com/defiweb/go-anymapper v0.3.0
-	github.com/defiweb/go-rlp v0.3.0
+	github.com/defiweb/go-rlp v0.4.0
 	github.com/defiweb/go-sigparser v0.6.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tyler-smith/go-bip39 v1.1.0

@@ -34,26 +34,26 @@ func (a *AccessList) Copy() AccessList {
 }
 
 func (a AccessList) EncodeRLP() ([]byte, error) {
-	l := rlp.NewList()
+	l := rlp.List{}
 	for _, tuple := range a {
-		tuple := tuple // Copy value because of loop variable reuse.
-		l.Append(&tuple)
+		tuple := tuple
+		l.Add(&tuple)
 	}
 	return rlp.Encode(l)
 }
 
 func (a *AccessList) DecodeRLP(data []byte) (int, error) {
-	d, n, err := rlp.Decode(data)
+	d, n, err := rlp.DecodeLazy(data)
 	if err != nil {
 		return 0, err
 	}
-	l, err := d.GetList()
+	l, err := d.List()
 	if err != nil {
 		return 0, err
 	}
 	for _, tuple := range l {
 		var t AccessTuple
-		if err := tuple.DecodeTo(&t); err != nil {
+		if err := tuple.Decode(&t); err != nil {
 			return 0, err
 		}
 		*a = append(*a, t)
@@ -71,36 +71,36 @@ func (a *AccessTuple) Copy() AccessTuple {
 }
 
 func (a AccessTuple) EncodeRLP() ([]byte, error) {
-	h := rlp.NewList()
+	h := rlp.List{}
 	for _, hash := range a.StorageKeys {
 		hash := hash
-		h.Append(&hash)
+		h.Add(&hash)
 	}
-	return rlp.Encode(rlp.NewList(&a.Address, h))
+	return rlp.Encode(rlp.List{a.Address, h})
 }
 
 func (a *AccessTuple) DecodeRLP(data []byte) (int, error) {
-	d, n, err := rlp.Decode(data)
+	d, n, err := rlp.DecodeLazy(data)
 	if err != nil {
 		return n, err
 	}
-	l, err := d.GetList()
+	l, err := d.List()
 	if err != nil {
 		return n, err
 	}
 	if len(l) != 2 {
 		return n, fmt.Errorf("invalid access list tuple")
 	}
-	if err := l[0].DecodeTo(&a.Address); err != nil {
+	if err := l[0].Decode(&a.Address); err != nil {
 		return n, err
 	}
-	h, err := l[1].GetList()
+	h, err := l[1].List()
 	if err != nil {
 		return n, err
 	}
 	for _, item := range h {
 		var hash Hash
-		if err := item.DecodeTo(&hash); err != nil {
+		if err := item.Decode(&hash); err != nil {
 			return n, err
 		}
 		a.StorageKeys = append(a.StorageKeys, hash)
@@ -381,9 +381,9 @@ type jsonBlock struct {
 	TransactionsRoot Hash                  `json:"transactionsRoot"`
 	MixHash          Hash                  `json:"mixHash"`
 	Sha3Uncles       Hash                  `json:"sha3Uncles"`
-	Nonce            hexNonce              `json:"nonce"`
+	Nonce            nonce                 `json:"nonce"`
 	Miner            Address               `json:"miner"`
-	LogsBloom        hexBloom              `json:"logsBloom"`
+	LogsBloom        bloom                 `json:"logsBloom"`
 	Difficulty       Number                `json:"difficulty"`
 	TotalDifficulty  Number                `json:"totalDifficulty"`
 	Size             Number                `json:"size"`

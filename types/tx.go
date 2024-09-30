@@ -20,7 +20,8 @@ const (
 type Transaction interface {
 	json.Marshaler
 	json.Unmarshaler
-	rlp.Item
+	rlp.Encoder
+	rlp.Decoder
 
 	HasTransactionData
 

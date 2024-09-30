@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	BlobLength       = 131072
+	BlobLength       = 131072 // 128 KiB
 	CommitmentLength = 48
 	ProofLength      = 48
 	PointLength      = 32
@@ -93,7 +93,7 @@ func VerifyBlobProof(blob *Blob, commitment Commitment, proof Proof) error {
 func ComputeBlobHashV1(commit Commitment) (h [32]byte) {
 	k := sha256.New()
 	k.Write(commit[:])
-	k.Sum(h[:])
+	k.Sum(h[:0])
 	h[0] = 0x01
 	return
 }

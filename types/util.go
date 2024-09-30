@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/defiweb/go-rlp"
+
 	"github.com/defiweb/go-eth/hexutil"
 )
 
@@ -150,6 +152,26 @@ func naiveUnquote(i []byte) []byte {
 	return i
 }
 
+func fixedBytesEncodeRLP(input []byte) ([]byte, error) {
+	return rlp.Encode(rlp.Bytes(input))
+}
+
+func fixedBytesDecodeRLP(input []byte, output []byte) (int, error) {
+	r, n, err := rlp.DecodeLazy(input)
+	if err != nil {
+		return n, err
+	}
+	b, err := r.Bytes()
+	if err != nil {
+		return n, err
+	}
+	if len(b) != len(output) {
+		return n, fmt.Errorf("invalid length %d", len(b))
+	}
+	copy(output, b)
+	return n, nil
+}
+
 func copyPtr[T any](p *T) *T {
 	if p == nil {
 		return nil
@@ -167,28 +189,10 @@ func copyBytes(p []byte) []byte {
 	return c
 }
 
-func copySlice[T any](p []T) []T {
-	if p == nil {
-		return nil
-	}
-	c := make([]T, len(p))
-	copy(c, p)
-	return c
-}
-
 func copyBigInt(p *big.Int) *big.Int {
 	if p == nil {
 		return nil
 	}
 	c := new(big.Int).Set(p)
-	return c
-}
-
-func copyHashes(p []Hash) []Hash {
-	if p == nil {
-		return nil
-	}
-	c := make([]Hash, len(p))
-	copy(c, p)
 	return c
 }

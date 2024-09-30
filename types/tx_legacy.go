@@ -47,6 +47,7 @@ func (t *TransactionLegacy) CalculateSigningHash() (Hash, error) {
 		gasLimit = uint64(0)
 		to       = ([]byte)(nil)
 		value    = big.NewInt(0)
+		input    = ([]byte)(nil)
 	)
 	if t.ChainID != nil {
 		chainID = *t.ChainID
@@ -66,19 +67,22 @@ func (t *TransactionLegacy) CalculateSigningHash() (Hash, error) {
 	if t.Value != nil {
 		value = t.Value
 	}
-	list := rlp.NewList(
-		rlp.NewUint(nonce),
-		rlp.NewBigInt(gasPrice),
-		rlp.NewUint(gasLimit),
-		rlp.NewBytes(to),
-		rlp.NewBigInt(value),
-		rlp.NewBytes(t.Input),
-	)
+	if t.Input != nil {
+		input = t.Input
+	}
+	list := rlp.List{
+		rlp.Uint(nonce),
+		(*rlp.BigInt)(gasPrice),
+		rlp.Uint(gasLimit),
+		rlp.Bytes(to),
+		(*rlp.BigInt)(value),
+		rlp.Bytes(input),
+	}
 	if t.ChainID != nil && *t.ChainID != 0 {
-		list.Append(
-			rlp.NewUint(chainID),
-			rlp.NewUint(0),
-			rlp.NewUint(0),
+		list.Add(
+			rlp.Uint(chainID),
+			rlp.Uint(0),
+			rlp.Uint(0),
 		)
 	}
 	bin, err := list.EncodeRLP()
@@ -96,6 +100,7 @@ func (t TransactionLegacy) EncodeRLP() ([]byte, error) {
 		gasLimit = uint64(0)
 		to       = ([]byte)(nil)
 		value    = big.NewInt(0)
+		input    = ([]byte)(nil)
 		v        = big.NewInt(0)
 		r        = big.NewInt(0)
 		s        = big.NewInt(0)
@@ -115,22 +120,25 @@ func (t TransactionLegacy) EncodeRLP() ([]byte, error) {
 	if t.Value != nil {
 		value = t.Value
 	}
+	if t.Input != nil {
+		input = t.Input
+	}
 	if t.Signature != nil {
 		v = t.Signature.V
 		r = t.Signature.R
 		s = t.Signature.S
 	}
-	return rlp.NewList(
-		rlp.NewUint(nonce),
-		rlp.NewBigInt(gasPrice),
-		rlp.NewUint(gasLimit),
-		rlp.NewBytes(to),
-		rlp.NewBigInt(value),
-		rlp.NewBytes(t.Input),
-		rlp.NewBigInt(v),
-		rlp.NewBigInt(r),
-		rlp.NewBigInt(s),
-	).EncodeRLP()
+	return rlp.List{
+		rlp.Uint(nonce),
+		(*rlp.BigInt)(gasPrice),
+		rlp.Uint(gasLimit),
+		rlp.Bytes(to),
+		(*rlp.BigInt)(value),
+		rlp.Bytes(input),
+		(*rlp.BigInt)(v),
+		(*rlp.BigInt)(r),
+		(*rlp.BigInt)(s),
+	}.EncodeRLP()
 }
 
 //nolint:funlen
@@ -140,18 +148,17 @@ func (t *TransactionLegacy) DecodeRLP(data []byte) (int, error) {
 		return 0, fmt.Errorf("empty data")
 	}
 	var (
-		list     *rlp.ListItem
-		nonce    = &rlp.UintItem{}
-		gasPrice = &rlp.BigIntItem{}
-		gasLimit = &rlp.UintItem{}
-		to       = &rlp.StringItem{}
-		value    = &rlp.BigIntItem{}
-		input    = &rlp.StringItem{}
-		v        = &rlp.BigIntItem{}
-		r        = &rlp.BigIntItem{}
-		s        = &rlp.BigIntItem{}
+		nonce    = new(rlp.Uint)
+		gasPrice = new(rlp.BigInt)
+		gasLimit = new(rlp.Uint)
+		to       = new(rlp.Bytes)
+		value    = new(rlp.BigInt)
+		input    = new(rlp.Bytes)
+		v        = new(rlp.BigInt)
+		r        = new(rlp.BigInt)
+		s        = new(rlp.BigInt)
 	)
-	list = rlp.NewList(
+	list := rlp.List{
 		nonce,
 		gasPrice,
 		gasLimit,
@@ -161,37 +168,37 @@ func (t *TransactionLegacy) DecodeRLP(data []byte) (int, error) {
 		v,
 		r,
 		s,
-	)
-	if _, err := rlp.DecodeTo(data, list); err != nil {
+	}
+	if _, err := rlp.Decode(data, &list); err != nil {
 		return 0, err
 	}
-	if nonce.X != 0 {
-		t.Nonce = &nonce.X
+	if nonce.Get() != 0 {
+		t.Nonce = nonce.Ptr()
 	}
-	if gasPrice.X.Sign() != 0 {
-		t.GasPrice = gasPrice.X
+	if gasPrice.Get().Sign() != 0 {
+		t.GasPrice = gasPrice.Ptr()
 	}
-	if gasLimit.X != 0 {
-		t.GasLimit = &gasLimit.X
+	if gasLimit.Get() != 0 {
+		t.GasLimit = gasLimit.Ptr()
 	}
-	if len(to.Bytes()) > 0 {
-		t.To = AddressFromBytesPtr(to.Bytes())
+	if len(to.Get()) > 0 {
+		t.To = AddressFromBytesPtr(*to)
 	}
-	if value.X.Sign() != 0 {
-		t.Value = value.X
+	if value.Get().Sign() != 0 {
+		t.Value = value.Ptr()
 	}
-	if len(input.Bytes()) > 0 {
-		t.Input = input.Bytes()
+	if len(input.Get()) > 0 {
+		t.Input = input.Get()
 	}
-	if v.X.Sign() != 0 || r.X.Sign() != 0 || s.X.Sign() != 0 {
+	if v.Get().Sign() != 0 || r.Get().Sign() != 0 || s.Get().Sign() != 0 {
 		t.Signature = &Signature{
-			V: v.X,
-			R: r.X,
-			S: s.X,
+			V: (*big.Int)(v),
+			R: (*big.Int)(r),
+			S: (*big.Int)(s),
 		}
 		// Derive chain ID from the V value.
-		if v.X.Cmp(big.NewInt(35)) >= 0 {
-			x := new(big.Int).Sub(v.X, big.NewInt(35))
+		if v.Get().Cmp(big.NewInt(35)) >= 0 {
+			x := new(big.Int).Sub((*big.Int)(v), big.NewInt(35))
 			x = x.Div(x, big.NewInt(2))
 			chainID := x.Uint64()
 			t.ChainID = &chainID
