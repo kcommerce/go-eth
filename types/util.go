@@ -2,8 +2,11 @@ package types
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
+
+	"github.com/defiweb/go-rlp"
 
 	"github.com/defiweb/go-eth/hexutil"
 )
@@ -99,6 +102,38 @@ func numberUnmarshalText(input []byte, output *big.Int) error {
 	return nil
 }
 
+// marshalJSONInline marshals given values into a single JSON object.
+// The given values must marshal into JSON objects. If same field is present in
+// multiple values, both are included in the result resulting in an invalid
+// JSON object.
+func marshalJSONInline(vs ...any) ([]byte, error) {
+	var (
+		buf   bytes.Buffer
+		comma bool
+	)
+	buf.WriteByte('{')
+	for _, v := range vs {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		if len(b) > 0 && b[0] != '{' && b[len(b)-1] != '}' {
+			return nil, fmt.Errorf("expected JSON object, got %s", b)
+		}
+		if len(b) <= 2 {
+			continue
+		}
+		if comma {
+			comma = false
+			buf.WriteByte(',')
+		}
+		comma = true
+		buf.Write(b[1 : len(b)-1])
+	}
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
+}
+
 // naiveQuote returns a double-quoted string. It does not perform any escaping.
 func naiveQuote(i []byte) []byte {
 	b := make([]byte, len(i)+2)
@@ -115,4 +150,49 @@ func naiveUnquote(i []byte) []byte {
 		return i[1 : len(i)-1]
 	}
 	return i
+}
+
+func fixedBytesEncodeRLP(input []byte) ([]byte, error) {
+	return rlp.Encode(rlp.Bytes(input))
+}
+
+func fixedBytesDecodeRLP(input []byte, output []byte) (int, error) {
+	r, n, err := rlp.DecodeLazy(input)
+	if err != nil {
+		return n, err
+	}
+	b, err := r.Bytes()
+	if err != nil {
+		return n, err
+	}
+	if len(b) != len(output) {
+		return n, fmt.Errorf("invalid length %d", len(b))
+	}
+	copy(output, b)
+	return n, nil
+}
+
+func copyPtr[T any](p *T) *T {
+	if p == nil {
+		return nil
+	}
+	c := *p
+	return &c
+}
+
+func copyBytes(p []byte) []byte {
+	if p == nil {
+		return nil
+	}
+	c := make([]byte, len(p))
+	copy(c, p)
+	return c
+}
+
+func copyBigInt(p *big.Int) *big.Int {
+	if p == nil {
+		return nil
+	}
+	c := new(big.Int).Set(p)
+	return c
 }

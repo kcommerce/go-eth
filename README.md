@@ -1,5 +1,7 @@
 [![Run Tests](https://github.com/defiweb/go-eth/actions/workflows/test.yml/badge.svg)](https://github.com/defiweb/go-eth/actions/workflows/test.yml)
 
+**README IS OUTDATED ON THIS BRANCH**
+
 # go-eth
 
 This library is a Go package designed to interact with the Ethereum blockchain. This package provides robust tools for

@@ -9,11 +9,10 @@ import (
 
 	"github.com/defiweb/go-rlp"
 
+	"github.com/defiweb/go-eth/crypto"
+	"github.com/defiweb/go-eth/crypto/kzg4844"
 	"github.com/defiweb/go-eth/hexutil"
 )
-
-// HashFunc returns the hash for the given input.
-type HashFunc func(data ...[]byte) Hash
 
 // Pad is a padding type.
 type Pad uint8
@@ -119,12 +118,9 @@ func (t Address) String() string {
 
 // Checksum returns the address with the checksum calculated according to
 // EIP-55.
-//
-// HashFunc is the hash function used to calculate the checksum, most likely
-// crypto.Keccak256.
-func (t Address) Checksum(h HashFunc) string {
+func (t Address) Checksum() string {
 	hex := []byte(hexutil.BytesToHex(t[:])[2:])
-	hash := h(hex)
+	hash := crypto.Keccak256(hex)
 	for i, c := range hex {
 		if c >= '0' && c <= '9' {
 			continue
@@ -158,15 +154,15 @@ func (t *Address) UnmarshalText(input []byte) error {
 }
 
 func (t Address) EncodeRLP() ([]byte, error) {
-	return rlp.Encode(rlp.NewBytes(t[:]))
+	return rlp.Encode(rlp.Bytes(t[:]))
 }
 
 func (t *Address) DecodeRLP(data []byte) (int, error) {
-	r, n, err := rlp.Decode(data)
+	r, n, err := rlp.DecodeLazy(data)
 	if err != nil {
 		return 0, err
 	}
-	a, err := r.GetBytes()
+	a, err := r.Bytes()
 	if err != nil {
 		return 0, err
 	}
@@ -295,11 +291,11 @@ func HashFromBigInt(i *big.Int) (Hash, error) {
 		x := new(big.Int).Set(i).And(i, m)
 		b = x.Bytes()
 		if len(b) != HashLength || b[0]&0x80 == 0 {
-			return Hash{}, fmt.Errorf("number too large to convert to hash")
+			return Hash{}, fmt.Errorf("number too large To convert To hash")
 		}
 	}
 	if len(b) > HashLength {
-		return Hash{}, fmt.Errorf("number too large to convert to hash")
+		return Hash{}, fmt.Errorf("number too large To convert To hash")
 	}
 	return HashFromBytes(b, PadLeft)
 }
@@ -366,15 +362,15 @@ func (t *Hash) UnmarshalText(input []byte) error {
 }
 
 func (t Hash) EncodeRLP() ([]byte, error) {
-	return rlp.Encode(rlp.NewBytes(t[:]))
+	return rlp.Encode(rlp.Bytes(t[:]))
 }
 
 func (t *Hash) DecodeRLP(data []byte) (int, error) {
-	r, n, err := rlp.Decode(data)
+	r, n, err := rlp.DecodeLazy(data)
 	if err != nil {
 		return 0, err
 	}
-	b, err := r.GetBytes()
+	b, err := r.Bytes()
 	if err != nil {
 		return 0, err
 	}
@@ -1039,25 +1035,73 @@ func (b *Bytes) UnmarshalText(input []byte) error {
 }
 
 //
-// SyncStatus type:
-//
-
-// SyncStatus represents the sync status of a node.
-type SyncStatus struct {
-	StartingBlock BlockNumber `json:"startingBlock"`
-	CurrentBlock  BlockNumber `json:"currentBlock"`
-	HighestBlock  BlockNumber `json:"highestBlock"`
-}
-
-//
 // Internal types:
 //
 
-const bloomLength = 256
+const (
+	bloomLength = 256
+	nonceLength = 8
+)
 
-type hexBloom [bloomLength]byte
+type (
+	kzgBlob       [kzg4844.BlobLength]byte
+	kzgCommitment [kzg4844.CommitmentLength]byte
+	kzgProof      [kzg4844.ProofLength]byte
+	bloom         [bloomLength]byte
+	nonce         [nonceLength]byte
+	hashList      []Hash
+	addressList   []Address
+)
 
-func bloomFromBytes(x []byte) hexBloom {
+func (t kzgBlob) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *kzgBlob) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
+
+func (t kzgBlob) EncodeRLP() ([]byte, error) {
+	return fixedBytesEncodeRLP(t[:])
+}
+
+func (t *kzgBlob) DecodeRLP(data []byte) (int, error) {
+	return fixedBytesDecodeRLP(data, t[:])
+}
+
+func (t kzgCommitment) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *kzgCommitment) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
+
+func (t kzgCommitment) EncodeRLP() ([]byte, error) {
+	return fixedBytesEncodeRLP(t[:])
+}
+
+func (t *kzgCommitment) DecodeRLP(data []byte) (int, error) {
+	return fixedBytesDecodeRLP(data, t[:])
+}
+
+func (t kzgProof) MarshalJSON() ([]byte, error) {
+	return bytesMarshalJSON(t[:]), nil
+}
+
+func (t *kzgProof) UnmarshalJSON(input []byte) error {
+	return fixedBytesUnmarshalJSON(input, t[:])
+}
+
+func (t kzgProof) EncodeRLP() ([]byte, error) {
+	return fixedBytesEncodeRLP(t[:])
+}
+
+func (t *kzgProof) DecodeRLP(data []byte) (int, error) {
+	return fixedBytesDecodeRLP(data, t[:])
+}
+
+func bloomFromBytes(x []byte) bloom {
 	var b [bloomLength]byte
 	if len(x) > len(b) {
 		return b
@@ -1066,46 +1110,27 @@ func bloomFromBytes(x []byte) hexBloom {
 	return b
 }
 
-func (t *hexBloom) Bytes() []byte {
+func (t *bloom) Bytes() []byte {
 	return t[:]
 }
 
-func (t *hexBloom) String() string {
-	if t == nil {
-		return ""
-	}
-	return hexutil.BytesToHex(t[:])
-}
-
-func (t hexBloom) MarshalJSON() ([]byte, error) {
+func (t bloom) MarshalJSON() ([]byte, error) {
 	return bytesMarshalJSON(t[:]), nil
 }
 
-func (t *hexBloom) UnmarshalJSON(input []byte) error {
+func (t *bloom) UnmarshalJSON(input []byte) error {
 	return fixedBytesUnmarshalJSON(input, t[:])
 }
 
-func (t hexBloom) MarshalText() ([]byte, error) {
-	return bytesMarshalText(t[:]), nil
-}
-
-func (t *hexBloom) UnmarshalText(input []byte) error {
-	return fixedBytesUnmarshalText(input, t[:])
-}
-
-const nonceLength = 8
-
-type hexNonce [nonceLength]byte
-
-func nonceFromBigInt(x *big.Int) hexNonce {
+func nonceFromBigInt(x *big.Int) nonce {
 	if x == nil {
-		return hexNonce{}
+		return nonce{}
 	}
 	return nonceFromBytes(x.Bytes())
 }
 
-func nonceFromBytes(x []byte) hexNonce {
-	var n hexNonce
+func nonceFromBytes(x []byte) nonce {
+	var n nonce
 	if len(x) > len(n) {
 		return n
 	}
@@ -1113,34 +1138,17 @@ func nonceFromBytes(x []byte) hexNonce {
 	return n
 }
 
-func (t *hexNonce) Big() *big.Int {
+func (t *nonce) Big() *big.Int {
 	return new(big.Int).SetBytes(t[:])
 }
 
-func (t *hexNonce) String() string {
-	if t == nil {
-		return ""
-	}
-	return hexutil.BytesToHex(t[:])
-}
-
-func (t hexNonce) MarshalJSON() ([]byte, error) {
+func (t nonce) MarshalJSON() ([]byte, error) {
 	return bytesMarshalJSON(t[:]), nil
 }
 
-func (t *hexNonce) UnmarshalJSON(input []byte) error {
+func (t *nonce) UnmarshalJSON(input []byte) error {
 	return fixedBytesUnmarshalJSON(input, t[:])
 }
-
-func (t hexNonce) MarshalText() ([]byte, error) {
-	return bytesMarshalText(t[:]), nil
-}
-
-func (t *hexNonce) UnmarshalText(input []byte) error {
-	return fixedBytesUnmarshalText(input, t[:])
-}
-
-type hashList []Hash
 
 func (b hashList) MarshalJSON() ([]byte, error) {
 	if len(b) == 1 {
@@ -1157,7 +1165,26 @@ func (b *hashList) UnmarshalJSON(input []byte) error {
 	return json.Unmarshal(input, (*[]Hash)(b))
 }
 
-type addressList []Address
+func (b *hashList) EncodeRLP() ([]byte, error) {
+	l := make(rlp.TypedList[Hash], len(*b))
+	for n, _ := range *b {
+		l[n] = &(*b)[n]
+	}
+	return rlp.Encode(l)
+}
+
+func (b *hashList) DecodeRLP(data []byte) (int, error) {
+	l := make(rlp.TypedList[Hash], 0)
+	n, err := rlp.Decode(data, &l)
+	if err != nil {
+		return 0, err
+	}
+	*b = make(hashList, len(l))
+	for n, hash := range l {
+		(*b)[n] = *hash
+	}
+	return n, nil
+}
 
 func (t addressList) MarshalJSON() ([]byte, error) {
 	if len(t) == 1 {

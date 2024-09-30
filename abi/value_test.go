@@ -302,13 +302,13 @@ func TestEncodeABI(t *testing.T) {
 		},
 		{
 			name: "int8#127",
-			val:  &IntValue{Size: 256},
+			val:  &IntValue{Size: 8},
 			arg:  big.NewInt(127),
 			want: Words{padL("7f")},
 		},
 		{
 			name: "int8#-128",
-			val:  &IntValue{Size: 256},
+			val:  &IntValue{Size: 8},
 			arg:  big.NewInt(-128),
 			want: Words{padR("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff80")},
 		},

@@ -8,72 +8,7 @@ import (
 )
 
 // RPC is an RPC client for the Ethereum-compatible nodes.
-type RPC interface {
-	// ClientVersion performs web3_clientVersion RPC call.
-	//
-	// It returns the current client version.
-	ClientVersion(ctx context.Context) (string, error)
-
-	// Listening performs net_listening RPC call.
-	//
-	// It returns true if the client is actively listening for network.
-	Listening(ctx context.Context) (bool, error)
-
-	// PeerCount performs net_peerCount RPC call.
-	//
-	// It returns the number of connected peers.
-	PeerCount(ctx context.Context) (uint64, error)
-
-	// ProtocolVersion performs eth_protocolVersion RPC call.
-	//
-	// It returns the current Ethereum protocol version.
-	ProtocolVersion(ctx context.Context) (uint64, error)
-
-	// Syncing performs eth_syncing RPC call.
-	//
-	// It returns an object with data about the sync status or false.
-	Syncing(ctx context.Context) (*types.SyncStatus, error)
-
-	// NetworkID performs net_version RPC call.
-	//
-	// It returns the current network ID.
-	NetworkID(ctx context.Context) (uint64, error)
-
-	// ChainID performs eth_chainId RPC call.
-	//
-	// It returns the current chain ID.
-	ChainID(ctx context.Context) (uint64, error)
-
-	// GasPrice performs eth_gasPrice RPC call.
-	//
-	// It returns the current price per gas in wei.
-	GasPrice(ctx context.Context) (*big.Int, error)
-
-	// Accounts performs eth_accounts RPC call.
-	//
-	// It returns the list of addresses owned by the client.
-	Accounts(ctx context.Context) ([]types.Address, error)
-
-	// BlockNumber performs eth_blockNumber RPC call.
-	//
-	// It returns the current block number.
-	BlockNumber(ctx context.Context) (*big.Int, error)
-
-	// GetBalance performs eth_getBalance RPC call.
-	//
-	// It returns the balance of the account of given address in wei.
-	GetBalance(ctx context.Context, address types.Address, block types.BlockNumber) (*big.Int, error)
-
-	// GetStorageAt performs eth_getStorageAt RPC call.
-	//
-	// It returns the value of key in the contract storage at the given
-	// address.
-	GetStorageAt(ctx context.Context, account types.Address, key types.Hash, block types.BlockNumber) (*types.Hash, error)
-
-	// GetTransactionCount performs eth_getTransactionCount RPC call.
-	//
-	// It returns the number of transactions sent from the given address.
-	GetTransactionCount(ctx context.Context, account types.Address, block types.BlockNumber) (uint64, error)
+type RPC2 interface {
 
 	// GetBlockTransactionCountByHash performs eth_getBlockTransactionCountByHash RPC call.
 	//
@@ -90,16 +25,6 @@ type RPC interface {
 	// It returns the number of uncles in the block with the given hash.
 	GetUncleCountByBlockHash(ctx context.Context, hash types.Hash) (uint64, error)
 
-	// GetUncleCountByBlockNumber performs eth_getUncleCountByBlockNumber RPC call.
-	//
-	// It returns the number of uncles in the block with the given block number.
-	GetUncleCountByBlockNumber(ctx context.Context, number types.BlockNumber) (uint64, error)
-
-	// GetCode performs eth_getCode RPC call.
-	//
-	// It returns the contract code at the given address.
-	GetCode(ctx context.Context, account types.Address, block types.BlockNumber) ([]byte, error)
-
 	// Sign performs eth_sign RPC call.
 	//
 	// It signs the given data with the given address.
@@ -110,14 +35,14 @@ type RPC interface {
 	// It signs the given transaction.
 	//
 	// If transaction was internally mutated, the mutated call is returned.
-	SignTransaction(ctx context.Context, tx *types.Transaction) ([]byte, *types.Transaction, error)
+	SignTransaction(ctx context.Context, tx types.Transaction) (types.Transaction, error)
 
 	// SendTransaction performs eth_sendTransaction RPC call.
 	//
 	// It sends a transaction to the network.
 	//
 	// If transaction was internally mutated, the mutated call is returned.
-	SendTransaction(ctx context.Context, tx *types.Transaction) (*types.Hash, *types.Transaction, error)
+	SendTransaction(ctx context.Context, tx types.Transaction) (*types.Hash, error)
 
 	// SendRawTransaction performs eth_sendRawTransaction RPC call.
 	//
@@ -130,14 +55,14 @@ type RPC interface {
 	// transaction on the blockchain.
 	//
 	// If call was internally mutated, the mutated call is returned.
-	Call(ctx context.Context, call *types.Call, block types.BlockNumber) ([]byte, *types.Call, error)
+	Call(ctx context.Context, call types.Call, block types.BlockNumber) ([]byte, error)
 
 	// EstimateGas performs eth_estimateGas RPC call.
 	//
 	// It estimates the gas necessary to execute a specific transaction.
 	//
 	// If call was internally mutated, the mutated call is returned.
-	EstimateGas(ctx context.Context, call *types.Call, block types.BlockNumber) (uint64, *types.Call, error)
+	EstimateGas(ctx context.Context, call types.Call, block types.BlockNumber) (uint64, error)
 
 	// BlockByHash performs eth_getBlockByHash RPC call.
 	//
@@ -152,17 +77,17 @@ type RPC interface {
 	// GetTransactionByHash performs eth_getTransactionByHash RPC call.
 	//
 	// It returns the information about a transaction requested by transaction.
-	GetTransactionByHash(ctx context.Context, hash types.Hash) (*types.OnChainTransaction, error)
+	GetTransactionByHash(ctx context.Context, hash types.Hash) (*types.TransactionOnChain, error)
 
 	// GetTransactionByBlockHashAndIndex performs eth_getTransactionByBlockHashAndIndex RPC call.
 	//
 	// It returns the information about a transaction requested by transaction.
-	GetTransactionByBlockHashAndIndex(ctx context.Context, hash types.Hash, index uint64) (*types.OnChainTransaction, error)
+	GetTransactionByBlockHashAndIndex(ctx context.Context, hash types.Hash, index uint64) (*types.TransactionOnChain, error)
 
 	// GetTransactionByBlockNumberAndIndex performs eth_getTransactionByBlockNumberAndIndex RPC call.
 	//
 	// It returns the information about a transaction requested by transaction.
-	GetTransactionByBlockNumberAndIndex(ctx context.Context, number types.BlockNumber, index uint64) (*types.OnChainTransaction, error)
+	GetTransactionByBlockNumberAndIndex(ctx context.Context, number types.BlockNumber, index uint64) (*types.TransactionOnChain, error)
 
 	// GetTransactionReceipt performs eth_getTransactionReceipt RPC call.
 	//
